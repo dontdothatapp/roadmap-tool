@@ -1,0 +1,39 @@
+{
+  "name": "roadmap-anywhere",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A shared, sprint-aware roadmap with leadership, alignment and team views, impact tracking and full change history.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node --watch-path=src/server --watch-path=src/shared --disable-warning=ExperimentalWarning src/server/index.ts --dev",
+    "dev:sync": "node scripts/dev-sync.mjs",
+    "build": "vite build",
+    "build:demo": "vite build --mode demo && node scripts/inline-demo.mjs",
+    "start": "node --disable-warning=ExperimentalWarning src/server/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "compression": "^1.8.2",
+    "express": "^5.3.0",
+    "lucide-react": "^1.60.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "playwright": "^1.64.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}

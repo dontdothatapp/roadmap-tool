@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest';
+import { groupsFor, newItemPatch, regroupPatch } from '../src/client/lib/model.ts';
+import { applyOps, emptyState } from '../src/shared/engine.ts';
+import type { Item, Op } from '../src/shared/types.ts';
+
+describe('newItemPatch', () => {
+  it('puts a new initiative in the lane it was drawn in', () => {
+    expect(newItemPatch('team', 'growth')).toEqual({ teamId: 'growth' });
+    expect(newItemPatch('track', '__none')).toEqual({ trackId: null });
+    expect(newItemPatch('tag', 't:payments')).toEqual({ tags: ['payments'] });
+    const stage = newItemPatch('stage', 'bottom');
+    expect(stage?.outcomes).toHaveLength(1);
+    expect(stage?.outcomes?.[0]).toMatchObject({ stageId: 'bottom', metric: '', impact: null });
+  });
+
+  it('adds nothing for lanes it cannot fill in', () => {
+    expect(newItemPatch('tag', '__none')).toBeNull();
+    expect(newItemPatch('none', 'all')).toBeNull();
+  });
+});
+
+describe('grouping the team view by umbrella', () => {
+  const create = (id: string, data: Partial<Item> = {}): Op => ({ kind: 'create', entity: 'item', id, data: { title: id, teamId: 't', ...data } });
+  const state = applyOps(emptyState(), [create('Zeta'), create('z1', { parentId: 'Zeta' }), create('Alpha'), create('a1', { parentId: 'Alpha' }), create('a2', { parentId: 'Alpha' }), create('solo')]).state;
+  const items = ['z1', 'a1', 'a2', 'solo'].map((id) => state.items[id]);
+
+  it('gives each umbrella a lane, by name, and one for the rest', () => {
+    const { groups, groupsOf } = groupsFor(state, 'umbrella', items);
+    expect(groups.map((g) => g.label)).toEqual(['Alpha', 'Zeta', 'No umbrella']);
+    expect(items.map((i) => groupsOf(i)[0])).toEqual(['Zeta', 'Alpha', 'Alpha', '__none']);
+  });
+
+  it('makes an initiative a part of the umbrella whose lane it moves to, or its own again', () => {
+    expect(regroupPatch('umbrella', 'Alpha')).toEqual({ parentId: 'Alpha' });
+    expect(regroupPatch('umbrella', '__none')).toEqual({ parentId: null });
+    expect(newItemPatch('umbrella', 'Zeta')).toEqual({ parentId: 'Zeta' });
+  });
+});

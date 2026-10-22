@@ -1,0 +1,17 @@
+services:
+  roadmap:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - roadmap-data:/data
+    environment:
+      # Start with example data so people can explore; use "empty" for a blank roadmap.
+      SEED: demo
+      # Behind an SSO proxy (oauth2-proxy, Cloudflare Access, Google IAP…), name the header that
+      # carries the signed-in user's email, e.g. X-Forwarded-Email. Leave unset to let people type a name.
+      # AUTH_HEADER: X-Forwarded-Email
+    restart: unless-stopped
+
+volumes:
+  roadmap-data:
