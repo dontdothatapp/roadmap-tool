@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupsFor, newItemPatch, regroupPatch } from '../src/client/lib/model.ts';
+import { groupsFor, newItemPatch, pickableInitiatives, regroupPatch } from '../src/client/lib/model.ts';
 import { applyOps, emptyState } from '../src/shared/engine.ts';
 import type { Item, Op } from '../src/shared/types.ts';
 
@@ -34,5 +34,33 @@ describe('grouping the team view by umbrella', () => {
     expect(regroupPatch('umbrella', 'Alpha')).toEqual({ parentId: 'Alpha' });
     expect(regroupPatch('umbrella', '__none')).toEqual({ parentId: null });
     expect(newItemPatch('umbrella', 'Zeta')).toEqual({ parentId: 'Zeta' });
+  });
+});
+
+describe('picking an umbrella', () => {
+  const create = (id: string, data: Partial<Item> = {}): Op => ({ kind: 'create', entity: 'item', id, data: { title: id, teamId: 'a', ...data } });
+  const state = applyOps(emptyState(), [
+    { kind: 'create', entity: 'team', id: 'a', data: { name: 'A', order: 0 } },
+    { kind: 'create', entity: 'team', id: 'b', data: { name: 'B', order: 1 } },
+    create('Checkout redesign'),
+    create('Billing'),
+    create('Wallets'),
+    create('w1', { parentId: 'Wallets' }),
+    create('Checkout speed', { teamId: 'b' }),
+  ]).state;
+  const candidates = ['Checkout redesign', 'Billing', 'Wallets', 'Checkout speed'].map((id) => state.items[id]);
+  const ids = (items: Item[]) => items.map((i) => i.id);
+
+  it('keeps the team’s own apart from other teams’, umbrellas with parts first', () => {
+    const { own, others } = pickableInitiatives(state, candidates, 'a', '');
+    expect(ids(own)).toEqual(['Wallets', 'Billing', 'Checkout redesign']);
+    expect(ids(others)).toEqual(['Checkout speed']);
+  });
+
+  it('matches every word typed, in any order and case', () => {
+    expect(ids(pickableInitiatives(state, candidates, 'a', 'REDESIGN check').own)).toEqual(['Checkout redesign']);
+    const { own, others } = pickableInitiatives(state, candidates, 'a', 'speed');
+    expect(own).toEqual([]);
+    expect(ids(others)).toEqual(['Checkout speed']);
   });
 });

@@ -139,8 +139,17 @@ export function Popover({
       setPos({ left, top });
     };
     place();
+    // Follow the trigger when what's around it scrolls, and re-place when the content changes size (a list
+    // filtered as you type), so a panel shown above its trigger stays against it.
+    const resized = new ResizeObserver(place);
+    if (ref.current) resized.observe(ref.current);
     window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      resized.disconnect();
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
   }, [open, anchor, align, width]);
 
   useEffect(() => {

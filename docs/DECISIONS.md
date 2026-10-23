@@ -59,6 +59,10 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   releases, an app stream). Those pieces are **parts** of an **umbrella**, one level only.
 - The umbrella holds the shared title, outcomes, one-pager and strategic bet; its dates are the union of its
   parts'. Rename an umbrella by opening it and editing its title.
+- Umbrellas are planned per team, not company-wide. Picking one (**Part of**, or adding existing initiatives to
+  an umbrella) is a field you type in to filter, with the list under it: the item's own team only, umbrellas
+  that already have parts first (with their colour dot and part count); **Show other teams** adds the rest
+  (and is on from the start when the current umbrella belongs to another team).
 - Cross-linking: a part shows its umbrella's outcomes and can add its own; the umbrella shows its parts'
   outcomes. Each outcome counts once in impact. The one-pager belongs to the umbrella and is shared by all parts.
 - Team view shows parts, named in two lines: the umbrella as a small white tag on top (its name in the umbrella's

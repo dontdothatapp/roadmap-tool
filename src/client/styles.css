@@ -5130,6 +5130,89 @@ body.drag-create * {
   font-weight: 600;
 }
 
+/* The umbrella picker: a field to type in, with a list under it. */
+.picker-field {
+  position: relative;
+  min-width: 0;
+}
+
+.picker-field .input {
+  padding-right: 28px;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  text-overflow: ellipsis;
+}
+
+.picker-field.has-dot .input {
+  padding-left: 25px;
+}
+
+.picker-field-dot {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.picker-options {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow: auto;
+  padding: 4px;
+}
+
+.picker-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.picker-option.is-active {
+  background: var(--surface-3);
+}
+
+.picker-option.is-action {
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.picker-option.is-toggle {
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+
+.picker-option-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.picker-hint {
+  flex: none;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 450;
+  white-space: nowrap;
+}
+
+.picker-check {
+  flex: none;
+  color: var(--accent);
+}
+
 .partof-new {
   display: flex;
   gap: 6px;

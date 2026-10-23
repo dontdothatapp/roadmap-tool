@@ -20,6 +20,22 @@ export function sortedTeams(state: RoadmapState, includeArchived = false): Team[
     .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 }
 
+/**
+ * Initiatives to pick from (to put an initiative under an umbrella, or to add parts to one) whose names have every
+ * word of `query`. Umbrellas are planned per team, so the team's own are kept apart from the rest: `own` lists
+ * `teamId`'s, umbrellas that already have parts first; `others` every other team's, in team order.
+ */
+export function pickableInitiatives(state: RoadmapState, candidates: Item[], teamId: ID, query: string): { own: Item[]; others: Item[] } {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const found = candidates.filter((i) => words.every((w) => i.title.toLowerCase().includes(w)));
+  const teamOrder = new Map(sortedTeams(state, true).map((t, k) => [t.id, k]));
+  const byKind = (a: Item, b: Item) => Number(hasParts(state, b.id)) - Number(hasParts(state, a.id)) || a.title.localeCompare(b.title);
+  return {
+    own: found.filter((i) => i.teamId === teamId).sort(byKind),
+    others: found.filter((i) => i.teamId !== teamId).sort((a, b) => (teamOrder.get(a.teamId) ?? 0) - (teamOrder.get(b.teamId) ?? 0) || byKind(a, b)),
+  };
+}
+
 export function sortedTracks(state: RoadmapState): Track[] {
   return Object.values(state.tracks).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 }

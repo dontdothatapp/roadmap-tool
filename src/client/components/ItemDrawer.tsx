@@ -24,7 +24,7 @@ import {
 } from '../../shared/types.ts';
 import { displayName, uid } from '../../shared/util.ts';
 import { useHistoryRows } from '../lib/historyRows.ts';
-import { allTags, dependencyInfo, sortedTeams, sortedTracks } from '../lib/model.ts';
+import { allTags, dependencyInfo, pickableInitiatives, sortedTeams, sortedTracks } from '../lib/model.ts';
 import {
   closeItem,
   createItem,
@@ -595,11 +595,183 @@ function splitIntoParts(item: Item) {
   );
 }
 
-/** Umbrellas to choose from: initiatives that aren't parts themselves, the item's own team first. */
+/** Umbrellas to choose from: initiatives that aren't parts themselves (the picker sorts and filters them). */
 function umbrellaChoices(state: RoadmapState, item: Item): Item[] {
-  return Object.values(state.items)
-    .filter((i) => i.id !== item.id && !i.parentId && !state.teams[i.teamId]?.archived)
-    .sort((a, b) => Number(b.teamId === item.teamId) - Number(a.teamId === item.teamId) || a.title.localeCompare(b.title));
+  return Object.values(state.items).filter((i) => i.id !== item.id && !i.parentId && !state.teams[i.teamId]?.archived);
+}
+
+/** Something the initiative picker offers besides initiatives: "Its own initiative", "New umbrella…". */
+interface PickerAction {
+  key: string;
+  label: string;
+  hint?: string;
+  run: (query: string) => void;
+}
+
+type PickerRow =
+  | { kind: 'item'; key: string; item: Item; other: boolean }
+  | { kind: 'action'; key: string; action: PickerAction }
+  | { kind: 'toggle'; key: string };
+
+/**
+ * A field to type in or pick from: initiatives of the item's own team (umbrellas are planned per team), with the
+ * other teams' a click away. Typing filters the list; ↑ ↓ and Enter pick, Escape closes it.
+ */
+function InitiativePicker({
+  id,
+  state,
+  teamId,
+  candidates,
+  current,
+  placeholder,
+  label,
+  small,
+  readOnly,
+  before = [],
+  after = [],
+  onPick,
+}: {
+  id: string;
+  state: RoadmapState;
+  teamId: ID;
+  candidates: Item[];
+  current: Item | null;
+  placeholder: string;
+  label?: string;
+  small?: boolean;
+  readOnly: boolean;
+  /** Offered above the initiatives while nothing is typed; `after` always, below them. */
+  before?: PickerAction[];
+  after?: PickerAction[];
+  onPick: (item: Item) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState<string | null>(null);
+  // Picked from another team before: that team's initiatives are what you're likely after.
+  const [allTeams, setAllTeams] = useState(!!current && current.teamId !== teamId);
+  const [active, setActive] = useState(0);
+  const wrap = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const query = typed ?? '';
+  const { own, others } = pickableInitiatives(state, candidates, teamId, query);
+  const teamName = state.teams[teamId]?.name ?? 'this team';
+
+  const rows: PickerRow[] = [
+    ...(query ? [] : before.map((action) => ({ kind: 'action' as const, key: action.key, action }))),
+    ...own.map((item) => ({ kind: 'item' as const, key: item.id, item, other: false })),
+    ...(others.length > 0 ? [{ kind: 'toggle' as const, key: '__toggle' }] : []),
+    ...(allTeams ? others.map((item) => ({ kind: 'item' as const, key: item.id, item, other: true })) : []),
+    ...after.map((action) => ({ kind: 'action' as const, key: action.key, action })),
+  ];
+  const at = Math.min(active, rows.length - 1);
+
+  useEffect(() => {
+    if (open) document.getElementById(`${id}-opt-${at}`)?.scrollIntoView({ block: 'nearest' });
+  }, [open, at, id]);
+
+  const close = () => {
+    setOpen(false);
+    setTyped(null);
+  };
+  const show = () => {
+    if (readOnly || open) return;
+    setOpen(true);
+    setActive(Math.max(0, rows.findIndex((r) => r.kind === 'item' && r.item.id === current?.id)));
+    // The field already shows the current umbrella: selected, so typing replaces it.
+    input.current?.select();
+  };
+  const choose = (row: PickerRow | undefined) => {
+    if (!row) return;
+    if (row.kind === 'toggle') {
+      setAllTeams((a) => !a);
+      return;
+    }
+    close();
+    input.current?.blur();
+    if (row.kind === 'item') onPick(row.item);
+    else row.action.run(query.trim());
+  };
+
+  // The umbrella's dot, while the field shows its name (not while typing).
+  const dot = current && typed === null && hasParts(state, current.id) ? boardColorOf(state, current).ink : null;
+  return (
+    <div ref={wrap} className={`picker-field${dot ? ' has-dot' : ''}`}>
+      {dot && <span className="picker-field-dot" style={{ background: dot }} />}
+      <input
+        ref={input}
+        id={id}
+        className={`input${small ? ' sm' : ''}`}
+        role="combobox"
+        aria-label={label}
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-autocomplete="list"
+        aria-activedescendant={open && rows.length ? `${id}-opt-${at}` : undefined}
+        autoComplete="off"
+        spellCheck={false}
+        disabled={readOnly}
+        placeholder={placeholder}
+        value={open ? (typed ?? current?.title ?? '') : (current?.title ?? '')}
+        onClick={show}
+        onBlur={close}
+        onChange={(e) => {
+          setTyped(e.target.value);
+          setActive(0);
+          setOpen(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!open) return show();
+            setActive((a) => (Math.min(a, rows.length - 1) + (e.key === 'ArrowDown' ? 1 : rows.length - 1)) % Math.max(1, rows.length));
+          } else if (e.key === 'Enter' && open) {
+            e.preventDefault();
+            choose(rows[at]);
+          }
+        }}
+      />
+      <Popover anchor={wrap.current} open={open} onClose={close} width={wrap.current?.offsetWidth}>
+        <div id={`${id}-list`} className="picker-options" role="listbox" onMouseDown={(e) => e.preventDefault()}>
+          {query && own.length === 0 && <div className="picker-empty muted sm">Nothing in {teamName} matches.</div>}
+          {rows.map((row, k) => {
+            const common = {
+              id: `${id}-opt-${k}`,
+              role: 'option',
+              'aria-selected': k === at,
+              onMouseMove: () => k !== at && setActive(k),
+              onClick: () => choose(row),
+            };
+            if (row.kind === 'toggle') {
+              return (
+                <div key={row.key} {...common} className={`picker-option is-toggle${k === at ? ' is-active' : ''}`}>
+                  {allTeams ? 'Hide other teams' : `Show other teams (${others.length})`}
+                </div>
+              );
+            }
+            if (row.kind === 'action') {
+              return (
+                <div key={row.key} {...common} className={`picker-option is-action${k === at ? ' is-active' : ''}`}>
+                  <span className="picker-label">{row.action.label}</span>
+                  {row.action.hint && <span className="picker-hint">{row.action.hint}</span>}
+                </div>
+              );
+            }
+            const parts = partsOf(state, row.item.id).length;
+            return (
+              <div key={row.key} {...common} className={`picker-option${k === at ? ' is-active' : ''}`}>
+                <span className="picker-option-dot" style={parts ? { background: boardColorOf(state, row.item).ink } : undefined} />
+                <span className="picker-label">{row.item.title}</span>
+                <span className="picker-hint">
+                  {row.other ? (state.teams[row.item.teamId]?.name ?? '') : parts ? `${parts} part${parts === 1 ? '' : 's'}` : ''}
+                </span>
+                {row.item.id === current?.id && <Check size={14} className="picker-check" />}
+              </div>
+            );
+          })}
+        </div>
+      </Popover>
+    </div>
+  );
 }
 
 /** Which initiative this is a part of: an existing one, or a new umbrella named after it (its outcomes move up). */
@@ -714,29 +886,26 @@ function PartOfField({ item, state, readOnly }: { item: Item; state: RoadmapStat
       </div>
     );
   }
-  const team = (i: Item) => (i.teamId === item.teamId ? '' : ` (${state.teams[i.teamId]?.name ?? 'other team'})`);
   return (
-    <select
+    <InitiativePicker
       id="dr-parent"
-      className="select"
-      value={umbrella?.id ?? ''}
-      disabled={readOnly}
-      onChange={(e) => {
-        const v = e.target.value;
-        // Suggest the name before a colon: "One-click checkout: Core flow" → "One-click checkout".
-        if (v === '__new') setNaming(item.title.includes(':') ? item.title.split(':')[0].trim() : item.title);
-        else link(v || null);
-      }}
-    >
-      <option value="">Its own initiative</option>
-      {choices.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.title}
-          {team(c)}
-        </option>
-      ))}
-      <option value="__new">＋ New umbrella initiative…</option>
-    </select>
+      state={state}
+      teamId={item.teamId}
+      candidates={choices}
+      current={umbrella}
+      placeholder="Its own initiative"
+      readOnly={readOnly}
+      before={umbrella ? [{ key: 'own', label: 'Its own initiative', hint: 'not part of an umbrella', run: () => link(null) }] : []}
+      after={[
+        {
+          key: 'new',
+          label: '＋ New umbrella initiative…',
+          // Named after what was typed, or what's before a colon: "One-click checkout: Core flow" → "One-click checkout".
+          run: (typed) => setNaming(typed || (item.title.includes(':') ? item.title.split(':')[0].trim() : item.title)),
+        },
+      ]}
+      onPick={(target) => target.id !== umbrella?.id && link(target.id)}
+    />
   );
 }
 
@@ -799,23 +968,18 @@ function PartsEditor({ item, state, cal, readOnly }: { item: Item; state: Roadma
             />
           </div>
           {choices.length > 0 && (
-            <select
-              className="select sm"
-              value=""
-              aria-label="Add an existing initiative as a part"
-              onChange={(e) => {
-                const part = state.items[e.target.value];
-                if (part) dispatch(linkOps(part, item), `Made “${part.title}” part of “${item.title}”`);
-              }}
-            >
-              <option value="">Add an existing initiative as a part…</option>
-              {choices.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                  {c.teamId !== item.teamId ? ` (${state.teams[c.teamId]?.name ?? 'other team'})` : ''}
-                </option>
-              ))}
-            </select>
+            <InitiativePicker
+              id="dr-add-part"
+              state={state}
+              teamId={item.teamId}
+              candidates={choices}
+              current={null}
+              placeholder="Add an existing initiative as a part…"
+              label="Add an existing initiative as a part"
+              small
+              readOnly={readOnly}
+              onPick={(part) => dispatch(linkOps(part, item), `Made “${part.title}” part of “${item.title}”`)}
+            />
           )}
         </>
       )}
