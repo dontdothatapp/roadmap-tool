@@ -2,17 +2,6 @@
 
 Ideas and planned work for Roadmap Anywhere. Add new ideas at the top. When something ships, remove it from here and describe it in the README.
 
-## No shading behind the current sprint
-
-The column of the current sprint (the week or two around today) is shaded in a light accent colour from the header down through every lane, and the current sprint and month are tinted in the header too. The red today line already shows where we are on the roadmap, so the extra colour only adds noise.
-
-- **Change:** drop the background tint from the current sprint's column and header cells (`.tl-col.is-current` and `.tl-cell.is-current` in `styles.css`, light and dark), in every timeline view.
-- **Stays:** the red today line, *Now W42 until Oct 28* in the corner, and the hatching of Brilliant Basics weeks (that marks the kind of sprint, not today).
-
-Open question:
-
-- Keep the current sprint's name in the header in blue and bold (a quiet way to find today when the red line is scrolled out of view), or make it plain like the others?
-
 ## One screenshot per initiative
 
 Let people attach a single screenshot to an initiative (a mockup, how a screen looks today, a chart) so others can see what it's about without opening Figma or the one-pager.

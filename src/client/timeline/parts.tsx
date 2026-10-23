@@ -1,6 +1,6 @@
 import { memo, useId, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { MONTHS_LONG, MONTHS_SHORT, dayOf, fmtDay, fmtRange, quarterOf, toDay, ymd } from '../../shared/dates.ts';
+import { MONTHS_LONG, MONTHS_SHORT, dayOf, fmtDays, fmtRange, quarterOf, toDay, ymd } from '../../shared/dates.ts';
 import { epdLine } from '../../shared/describe.ts';
 import { driversIn, figureText, figuresOf, formatImpact, landingText, monthNo, totalsOf, type Driver, type Figure } from '../../shared/impact.ts';
 import { deliveryEndDay, needStartDay, type SprintCalendar } from '../../shared/sprints.ts';
@@ -10,7 +10,9 @@ import { dependencyInfo } from '../lib/model.ts';
 import { Figures, StatusPill } from '../components/ui.tsx';
 import type { Layout, Scale } from './geometry.ts';
 
-export const HEAD_H = 46;
+/** The header's upper tier (months or quarters) without expected impact, and its lower tier (sprints or months). */
+export const TOP_TIER_H = 24;
+export const LOWER_TIER_H = 34;
 
 interface Cell {
   key: string;
@@ -19,9 +21,13 @@ interface Cell {
   /** The days the cell stands for (it can be cut off at the edges of the timeline). */
   start: number;
   end: number;
+  /** The period's full name ("October 2026"), for tooltips and the impact header. */
   label: string;
+  /** What the cell shows, when it differs from `label`: a month without its year, a sprint's code. */
+  short?: string;
+  /** A quieter second part: the year after January, a sprint's days under its code. */
+  note?: string;
   title?: string;
-  current?: boolean;
   highlight?: boolean;
 }
 
@@ -31,6 +37,10 @@ function clip(scale: Scale, start: number, end: number) {
   return { x: scale.x(a), w: scale.x(b) - scale.x(a) };
 }
 
+/**
+ * Months, named in full over sprints (the year only where one starts, so it isn't repeated on every month), or
+ * short under quarters.
+ */
 function monthCells(scale: Scale, longLabels: boolean): Cell[] {
   const out: Cell[] = [];
   let { y, m } = ymd(scale.start);
@@ -41,20 +51,22 @@ function monthCells(scale: Scale, longLabels: boolean): Cell[] {
     const nm = m === 12 ? 1 : m + 1;
     const end = dayOf(ny, nm);
     const { x, w } = clip(scale, start, end);
-    const label = longLabels ? (w > 110 ? `${MONTHS_LONG[m - 1]} ${y}` : w > 64 ? `${MONTHS_SHORT[m - 1]} ${y}` : MONTHS_SHORT[m - 1]) : w > 26 ? MONTHS_SHORT[m - 1] : '';
-    out.push({ key: `m${y}-${m}`, x, w, start, end, label });
+    const label = `${MONTHS_LONG[m - 1]} ${y}`;
+    const short = longLabels ? (w > 80 ? MONTHS_LONG[m - 1] : MONTHS_SHORT[m - 1]) : w > 26 ? MONTHS_SHORT[m - 1] : '';
+    const note = longLabels && (m === 1 || out.length === 0) && w > 64 ? String(y) : undefined;
+    out.push({ key: `m${y}-${m}`, x, w, start, end, label, short, note });
     y = ny;
     m = nm;
   }
   return out;
 }
 
-function quarterCells(scale: Scale, fy: number, today: number): Cell[] {
+function quarterCells(scale: Scale, fy: number): Cell[] {
   const out: Cell[] = [];
   let q = quarterOf(scale.start, fy);
   while (q.start < scale.end) {
     const { x, w } = clip(scale, q.start, q.end);
-    out.push({ key: q.key, x, w, start: q.start, end: q.end, label: w > 50 ? q.label : '', current: today >= q.start && today < q.end });
+    out.push({ key: q.key, x, w, start: q.start, end: q.end, label: q.label, short: w > 50 ? q.label : '' });
     q = quarterOf(q.end, fy);
   }
   return out;
@@ -68,8 +80,8 @@ export function useSprintScale(scale: Scale) {
 }
 
 /** The header's upper tier: months when zoomed in to sprints, quarters further out. */
-function periodCells(scale: Scale, fy: number, today: number): Cell[] {
-  return atSprintScale(scale) ? monthCells(scale, true) : quarterCells(scale, fy, today);
+function periodCells(scale: Scale, fy: number): Cell[] {
+  return atSprintScale(scale) ? monthCells(scale, true) : quarterCells(scale, fy);
 }
 
 /** Expected impact to show in the header, period by period (Leadership): the drivers and the funnel stages they move. */
@@ -99,10 +111,10 @@ export interface HeaderImpact {
 export const IMPACT_LINE_H = 16;
 
 /** The impact gained in each period of the header's upper tier (ramp-ups spread month by month), per funnel stage. */
-export function headerImpact(scale: Scale, fy: number, today: number, outcomes: HeaderOutcomes): HeaderImpact {
+export function headerImpact(scale: Scale, fy: number, outcomes: HeaderOutcomes): HeaderImpact {
   const byCell = new Map<string, PeriodImpact[]>();
   let lines = 0;
-  for (const cell of periodCells(scale, fy, today)) {
+  for (const cell of periodCells(scale, fy)) {
     const period = { key: cell.key, label: cell.label, first: monthNo(cell.start), last: monthNo(cell.end - 1) };
     const drivers = driversIn(outcomes.drivers, period);
     const was = outcomes.was ? driversIn(outcomes.was, period) : null;
@@ -120,44 +132,47 @@ export function headerImpact(scale: Scale, fy: number, today: number, outcomes: 
 }
 
 /** Height of the header's upper tier: the period's name, plus its impact when shown. */
-export const topTierH = (impact: HeaderImpact | null) => 21 + (impact?.lines ? impact.lines * IMPACT_LINE_H + 6 : 0);
+export const topTierH = (impact: HeaderImpact | null) => TOP_TIER_H + (impact?.lines ? impact.lines * IMPACT_LINE_H + 6 : 0);
 
+/**
+ * The timeline's header: months over sprints, or quarters over months when zoomed out. Like a printed calendar,
+ * each sprint is a block of its own with its code and its days under the month ("W42" over "15–28"), centred,
+ * so it reads as belonging to its column; where we are is the red today line's job, so no sprint is singled out.
+ */
 export const TimelineHeader = memo(function TimelineHeader({
   scale,
   cal,
   fy,
-  today,
   impact,
 }: {
   scale: Scale;
   cal: SprintCalendar;
   fy: number;
-  today: number;
   impact: HeaderImpact | null;
 }) {
   const sprintScale = useSprintScale(scale);
   const topH = topTierH(impact);
   const { top, bottom } = useMemo(() => {
-    const top = periodCells(scale, fy, today);
+    const top = periodCells(scale, fy);
     const bottom: Cell[] = sprintScale
       ? cal.between(scale.start, scale.end).map((s) => {
           const { x, w } = clip(scale, s.start, s.end);
-          const label = w >= 78 ? `${s.code} · ${fmtDay(s.start)}` : w >= 30 ? s.code : '';
           return {
             key: `s${s.index}`,
             x,
             w,
             start: s.start,
             end: s.end,
-            label,
+            label: s.code,
+            short: w >= 32 ? s.code : w >= 18 ? s.prefix : '',
+            note: w >= 36 ? fmtDays(s.start, s.end) : undefined,
             title: `${s.label} · ${fmtRange(s.start, s.end, true)}`,
-            current: today >= s.start && today < s.end,
             highlight: s.highlight,
           };
         })
       : monthCells(scale, false);
     return { top, bottom };
-  }, [scale, cal, fy, today, sprintScale]);
+  }, [scale, cal, fy, sprintScale]);
 
   return (
     <div className="tl-tiers" style={{ width: scale.width }}>
@@ -168,7 +183,7 @@ export const TimelineHeader = memo(function TimelineHeader({
           return (
             <div
               key={c.key}
-              className={`tl-cell${c.current ? ' is-current' : ''}`}
+              className="tl-cell"
               style={{ left: c.x, width: c.w }}
               title={
                 impact
@@ -178,7 +193,10 @@ export const TimelineHeader = memo(function TimelineHeader({
                   : undefined
               }
             >
-              <span className="tl-period">{c.label}</span>
+              <span className="tl-period">
+                {c.short}
+                {c.note && <span className="tl-period-note"> {c.note}</span>}
+              </span>
               {lines.length > 0 && (
                 <span className="tl-impact">
                   {lines.map((i) => (
@@ -197,13 +215,11 @@ export const TimelineHeader = memo(function TimelineHeader({
       </div>
       <div className="tl-tier bottom" style={{ top: topH }}>
         {bottom.map((c) => (
-          <div
-            key={c.key}
-            className={`tl-cell${c.current ? ' is-current' : ''}${c.highlight ? ' is-highlight' : ''}`}
-            style={{ left: c.x, width: c.w }}
-            title={c.title}
-          >
-            <span>{c.label}</span>
+          <div key={c.key} className={`tl-cell${c.highlight ? ' is-highlight' : ''}`} style={{ left: c.x, width: c.w }} title={c.title ?? c.label}>
+            <span className="tl-block-label">
+              {c.short && <span className="tl-block-name">{c.short}</span>}
+              {c.note && <span className="tl-block-note">{c.note}</span>}
+            </span>
           </div>
         ))}
       </div>
@@ -228,22 +244,16 @@ export const TimelineGrid = memo(function TimelineGrid({
   const { columns, lines, quarters } = useMemo(() => {
     const sprints = cal.between(scale.start, scale.end);
     // Shaded sprint types (e.g. Brilliant Basics) only when zoomed in enough for them to read as columns, not stripes.
-    const columns = sprints
-      .filter((s) => (s.highlight && scale.px >= 3) || (today >= s.start && today < s.end))
-      .map((s) => ({ key: s.index, ...clip(scale, s.start, s.end), current: today >= s.start && today < s.end, highlight: s.highlight }));
+    const columns = sprints.filter((s) => s.highlight && scale.px >= 3).map((s) => ({ key: s.index, ...clip(scale, s.start, s.end) }));
     const lines = sprintScale ? sprints.map((s) => ({ key: `s${s.index}`, x: scale.x(s.start) })) : monthCells(scale, false).map((c) => ({ key: c.key, x: c.x }));
-    const quarters = quarterCells(scale, fy, today).map((q) => ({ key: q.key, x: q.x }));
+    const quarters = quarterCells(scale, fy).map((q) => ({ key: q.key, x: q.x }));
     return { columns, lines, quarters };
-  }, [scale, cal, fy, today, sprintScale]);
+  }, [scale, cal, fy, sprintScale]);
 
   return (
     <div className="tl-grid" style={{ height }}>
       {columns.map((c) => (
-        <div
-          key={c.key}
-          className={`tl-col${c.highlight ? ' is-highlight' : ''}${c.current ? ' is-current' : ''}`}
-          style={{ left: c.x, width: c.w }}
-        />
+        <div key={c.key} className="tl-col is-highlight" style={{ left: c.x, width: c.w }} />
       ))}
       {lines.map((l) => (
         <div key={l.key} className="tl-line" style={{ left: l.x }} />

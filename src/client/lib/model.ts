@@ -1,4 +1,4 @@
-import { boardColorOf } from '../../shared/colors.ts';
+import { DEFAULT_BOARD_COLOR, boardColor, boardColorOf } from '../../shared/colors.ts';
 import { deliveryEndDay, needStartDay } from '../../shared/sprints.ts';
 import { epdLine } from '../../shared/describe.ts';
 import { hasParts, isPart, linkedOutcomes, partsOf, umbrellaOf } from '../../shared/parts.ts';
@@ -76,7 +76,8 @@ export function outcomesOf(state: RoadmapState, item: Item): Item['outcomes'] {
 }
 
 export function colorOf(item: Item, state: RoadmapState, by: ColorBy): string {
-  if (by === 'board') return boardColorOf(state, item).hex;
+  // The team board draws every initiative alike: umbrellas are told apart by the coloured tags on their parts.
+  if (by === 'board') return boardColor(DEFAULT_BOARD_COLOR).hex;
   if (by === 'track') return (item.trackId && state.tracks[item.trackId]?.color) || NEUTRAL;
   return state.teams[item.teamId]?.color ?? NEUTRAL;
 }
@@ -140,7 +141,7 @@ export function groupsFor(state: RoadmapState, by: GroupBy, items: Item[]): { gr
     const groups: GroupDef[] = ids
       .map((id) => state.items[id])
       .sort((a, b) => a.title.localeCompare(b.title))
-      .map((u) => ({ id: u.id, label: u.title, color: boardColorOf(state, u).hex }));
+      .map((u) => ({ id: u.id, label: u.title, color: boardColorOf(state, u).ink }));
     if (items.some((i) => of(i)[0] === NONE)) groups.push({ id: NONE, label: 'No umbrella', color: null });
     return { groups, groupsOf: of };
   }

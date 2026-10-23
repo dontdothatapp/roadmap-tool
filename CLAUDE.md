@@ -89,8 +89,9 @@ The two big files are `src/client/timeline/Timeline.tsx` (rendering and the drag
   never shown as a label.
 - **Outcome**: funnel stage + expected impact (`%`, `pp` or absolute) + landing month (`landsBy`, null = month
   implementation ends) + optional ramp-up (share of the impact per month after landing).
-- **Board** (team view): rows are stored per item (`row`, `tall` for two-row bars). **Board colour**: pastel
-  `color` per item; parts wear their umbrella's (see `src/shared/colors.ts`).
+- **Board** (team view): rows are stored per item (`row`, `tall` for two-row bars). **Board colour**: every bar
+  is the same pastel; an umbrella's `color` shows as the tag on its parts (name and dot in its deeper `ink`
+  shade, see `src/shared/colors.ts`). A standalone item's own `color` is kept but no longer shown.
 - **Own view**: a strategic bet with `ownView: true` gets its own sidebar entry and view (`#bet.<id>`).
 
 ## Conventions
@@ -141,10 +142,11 @@ zoom levels that matter, and measure positions (`boundingBox`) when the request 
 - Packed lanes keep an 8 px gap between bars in a row; list rows and compact rows use 0 and inset the bar ends
   (`endInset`) instead, so back-to-back initiatives share a row with a visible gap.
 - Opening an umbrella must not move it: lanes are packed as if closed, then rows are inserted under it (`openUp`).
-- The leadership header height depends on the expected-impact lines (`headH` in Timeline.tsx, not `HEAD_H`).
+- The leadership header height depends on the expected-impact lines (`headH` in Timeline.tsx: `topTierH(impact)`
+  plus `LOWER_TIER_H`), so never assume a fixed header height.
 - The bet view does its own grouping (section header rows) and passes `groupBy="none"` to the Timeline: a real
   `groupBy` there would turn vertical drags into "move to that lane" edits.
-- `ColorBy 'board'` (pastels) is only for the team view; `GroupBy 'umbrella'` only for the team view.
+- `ColorBy 'board'` (one bar colour, umbrella tags) is only for the team view; `GroupBy 'umbrella'` only for the team view.
 - New umbrellas get a pinned board colour inside the client `dispatch` (`pinUmbrellaColors`); umbrellas without
   one get a computed colour in id order. Server-side imports don't pin.
 - In the cloud container, background dev servers can be reaped between turns: start them with the harness's

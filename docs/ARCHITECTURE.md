@@ -66,7 +66,7 @@ Other shared modules:
 | `dates.ts` | Day numbers (days since epoch), ISO dates, ISO weeks, quarters with a fiscal-year start, formatting |
 | `parts.ts` | Umbrellas: `partsIndex`, `partsOf`, `umbrellaOf`, `rollUp` (umbrella dates = union of its parts', cached per state), `linkOps`, `onePagerOf`, `linkedOutcomes`, `partLabel` |
 | `impact.ts` | Outcome maths: landing month, ramp-up share per month, impact gained per period (`driversIn`, `totalsOf`, `impactMatrix`), `landingText` / `landingSteps`; comparing two versions: `figuresOf` ("+3% → +5%"), `stageFigures` (an initiative's outcomes per stage, for its bar), `driverChanges` |
-| `colors.ts` | Board pastels (`BOARD_COLORS`), `boardColorOf`, `umbrellaColors`, `pinUmbrellaColors` |
+| `colors.ts` | Umbrella colours for the team board (`BOARD_COLORS`: a pastel `hex` and a deeper `ink` for tags), `boardColorOf`, `umbrellaColors`, `pinUmbrellaColors` |
 | `describe.ts` | Turns a `ChangeRecord` into History text ("Rescheduled… W42 → W44 (+1 sprint)"), marks layout-only changes minor; `epdLine` for team owners |
 | `diff.ts` | `diffStates` for Compare: added / removed / slipped / changed fields, ignoring layout-only fields |
 | `seed.ts` | `generateDemo()`: the example roadmap with history and snapshots |
@@ -127,7 +127,7 @@ being viewed or compared against), undo/redo stacks, toasts, overlays.
 | --- | --- | --- |
 | Leadership | `LeadershipView.tsx` | `rollUp` state, `umbrellaItems` (umbrellas and standalone items that pass filters), lanes from `groupsFor` (strategic bet by default, or team / stage / tag / none), packed timeline with expected impact in the header (`outcomes` prop, with `was` drivers when comparing) and under each bar's name (`impactLines`) |
 | Alignment | `AlignmentView.tsx` | Same as leadership, lanes by team, no impact header |
-| Team | `TeamView.tsx` | One team's parts and standalone items; list mode (the free board, names in bars, stored rows), pastel board colours, optional grouping (umbrella, bet, stage, tag); Sprint overview and Backlog side panels |
+| Team | `TeamView.tsx` | One team's parts and standalone items; list mode (the free board, names in bars, stored rows), one bar colour with each part's umbrella as a coloured tag (`colorBy 'board'`), optional grouping (umbrella, bet, stage, tag); Sprint overview and Backlog side panels |
 | Strategic bet | `BetView.tsx` | One bet: compact timeline, a row per umbrella or standalone item named in the label column, umbrellas open into one named line per part, optional team / tag sections |
 | Impact | `ImpactView.tsx` | Funnel stage × period matrix of impact gained, with a drivers panel |
 | History | `HistoryView.tsx` | Change feed, snapshots, time travel, compare with today |
@@ -137,7 +137,7 @@ Shell (`App.tsx`): sidebar (an icon rail that opens on hover, or pinned), item d
 shortcuts help, global keys (N, 1–5, T, +/−, arrows), presence, toasts.
 
 `components/ItemDrawer.tsx` is the initiative details panel: title, flags, strategic bet, tags, umbrella
-("Part of"), board colour, schedule (phase chips + sprint range picker) or parts, description, one-pager and
+("Part of"), umbrella colour (umbrellas and parts only), schedule (phase chips + sprint range picker) or parts, description, one-pager and
 links, expected outcomes (with ramp-up), dependencies, activity.
 
 `lib/model.ts`: sorting, filters (`applyFilters`, `matchesQuery`), `groupsFor` (lanes and which lanes an item is
@@ -159,7 +159,7 @@ dependency checks (`dependencyInfo`: does the work land before it's needed).
 2. `geometry()` turns rows into pixels (`metricsFor(mode, compact)`), per phase span (`spanGeoms`), with bar
    ends inset in list and compact modes.
 3. Rendering: lane backgrounds, grid (`TimelineGrid`), header (`TimelineHeader`: months/quarters over
-   sprints/months, plus impact lines when `outcomes` is set), bars (`Block`, memoised: plain props and one
+   sprint/month blocks with code and days, plus impact lines when `outcomes` is set; `topTierH` + `LOWER_TIER_H`), bars (`Block`, memoised: plain props and one
    stable `BlockActions` object, so only the bars whose props change render again), family boxes around open
    umbrellas, dependency arrows (`DependencyLayer`), hover card (`HoverCard`), the left label column (`GroupLabel`, or
    `RowLabel` in compact mode).

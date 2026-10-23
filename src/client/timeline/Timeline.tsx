@@ -2,6 +2,7 @@ import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { ChevronDown, ChevronRight, ChevronUp, Link2 } from 'lucide-react';
 import { fmtDay, fmtRange, toDay, todayDay } from '../../shared/dates.ts';
 import { calendarFor, deliverySpan, overallSpan, type SprintCalendar } from '../../shared/sprints.ts';
+import { boardColorOf } from '../../shared/colors.ts';
 import { partLabel, partsOf, umbrellaOf } from '../../shared/parts.ts';
 import type { StageFigures } from '../../shared/impact.ts';
 import { PHASES, PHASE_LABELS, type ID, type Item, type Op, type PhaseKey, type RoadmapState, type Span } from '../../shared/types.ts';
@@ -24,7 +25,7 @@ import {
   type Scale,
   type SpanKey,
 } from './geometry.ts';
-import { DependencyLayer, HEAD_H, HoverCard, TimelineGrid, TimelineHeader, headerImpact, topTierH, type HeaderOutcomes } from './parts.tsx';
+import { DependencyLayer, LOWER_TIER_H, HoverCard, TimelineGrid, TimelineHeader, headerImpact, topTierH, type HeaderOutcomes } from './parts.tsx';
 
 /** Drag data for an initiative dragged onto the timeline from elsewhere (the team's backlog). */
 export const ITEM_DRAG_TYPE = 'application/x-roadmap-item';
@@ -246,9 +247,9 @@ export function Timeline(props: TimelineProps) {
   const range = useMemo(() => timelineRange(state, today), [state, today]);
   const scale = useMemo(() => makeScale(range.start, range.end, pxPerDay), [range.start, range.end, pxPerDay]);
   const metrics = useMemo(() => metricsFor(mode, compact), [mode, compact]);
-  const impact = useMemo(() => (outcomes ? headerImpact(scale, fy, today, outcomes) : null), [outcomes, scale, fy, today]);
+  const impact = useMemo(() => (outcomes ? headerImpact(scale, fy, outcomes) : null), [outcomes, scale, fy]);
   // The header grows by the lines of impact it shows.
-  const headH = HEAD_H - 21 + topTierH(impact);
+  const headH = topTierH(impact) + LOWER_TIER_H;
   const packing = useMemo(
     // Compact rows let one part follow another in the same row; their ends are inset instead.
     () => pack(items, groups, groupsOf, mode, phaseMode, scale, { board, expand, gap: compact ? 0 : undefined, oneEach: compact }),
@@ -994,7 +995,7 @@ export function Timeline(props: TimelineProps) {
               )}
             </div>
           )}
-          <TimelineHeader scale={scale} cal={cal} fy={fy} today={today} impact={impact} />
+          <TimelineHeader scale={scale} cal={cal} fy={fy} impact={impact} />
         </div>
 
         <div className="tl-main">
@@ -1253,14 +1254,18 @@ const Block = memo(function Block({
   const color = colorOf(item, state, colorBy);
   const ink = inkOn(color);
   const { badge, ghosts } = compareInfo(b, compare, phaseMode, scale, metrics, cal);
-  const cssVars = { '--c': color, '--ink': ink } as CSSProperties;
   const top = b.spans[0].y;
   const height = b.spans[0].h;
   const overall = overallSpan(item);
   // A part shows its umbrella in front of its own name (unless the name already starts with it).
   const umbrella = umbrellaOf(state, item);
   // Under its open umbrella, or in its umbrella's lane, a part needs no umbrella line: it's right there.
-  const named = umbrella && !b.nested && groupBy !== 'umbrella' ? partLabel(umbrella, item) : null;
+  const showsUmbrella = !!umbrella && !b.nested && groupBy !== 'umbrella';
+  const named = umbrella && showsUmbrella ? partLabel(umbrella, item) : null;
+  // On the team board every bar looks alike and the umbrella's colour is on its tag instead: its name on white
+  // with a dot, or just the dot when the part's own name already says which umbrella it's from.
+  const tagged = colorBy === 'board' && showsUmbrella;
+  const cssVars = { '--c': color, '--ink': ink, ...(tagged ? { '--u': boardColorOf(state, item).ink } : {}) } as CSSProperties;
   // An umbrella's dates come from its parts: it moves as a whole, and its parts are resized in the team view.
   const partCount = partsOf(state, item.id).length;
   const isUmbrella = partCount > 0;
@@ -1269,7 +1274,7 @@ const Block = memo(function Block({
       {named?.prefix || impactLine ? (
         // Two lines: the umbrella small and quiet on top of a part's own name, or the expected impact under the name.
         <span className="bar-stack">
-          {named?.prefix && <span className="bar-parent">{named.prefix}</span>}
+          {named?.prefix && <span className={tagged ? 'bar-tag' : 'bar-parent'}>{named.prefix}</span>}
           <span className="bar-title">{item.title}</span>
           {impactLine && (
             <span className="bar-impact">
@@ -1290,7 +1295,10 @@ const Block = memo(function Block({
           )}
         </span>
       ) : (
-        <span className="bar-title">{item.title}</span>
+        <>
+          {tagged && <span className="bar-dot" />}
+          <span className="bar-title">{item.title}</span>
+        </>
       )}
       {item.status === 'at_risk' && <span className="bar-flag" aria-label="At risk">!</span>}
       {item.status === 'done' && <span className="bar-done" aria-label="Done">✓</span>}

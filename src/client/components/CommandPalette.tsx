@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, Camera, Flag, Moon, Plus, Search, Sun, Umbrella, Users } from 'lucide-react';
 import { boardColorOf } from '../../shared/colors.ts';
@@ -154,13 +154,13 @@ function ItemMeta({ item, state }: { item: Item; state: RoadmapState }) {
   return (
     <span className="palette-meta">
       {umbrella && (
-        <span className="palette-umbrella" style={{ background: boardColorOf(state, umbrella).hex }} title={`Part of ${umbrella.title}`}>
+        <span className="palette-umbrella" style={{ '--u': boardColorOf(state, umbrella).ink } as CSSProperties} title={`Part of ${umbrella.title}`}>
           <Umbrella size={11} />
           {umbrella.title}
         </span>
       )}
       {parts > 0 && (
-        <span className="palette-umbrella" style={{ background: boardColorOf(state, item).hex }} title="An umbrella: its dates come from its parts">
+        <span className="palette-umbrella" style={{ '--u': boardColorOf(state, item).ink } as CSSProperties} title="An umbrella: its dates come from its parts">
           <Umbrella size={11} />
           {parts} part{parts === 1 ? '' : 's'}
         </span>

@@ -72,6 +72,11 @@ export function fmtRange(start: number, endExclusive: number, withYear = false):
   return `${f(start)} – ${f(last)}`;
 }
 
+/** Just the days of a half-open [start, end) span, for under a month name: "1–14", or "29–4" across a month's end. */
+export function fmtDays(start: number, endExclusive: number): string {
+  return `${ymd(start).d}–${ymd(endExclusive - 1).d}`;
+}
+
 export interface Quarter {
   key: string;
   label: string;

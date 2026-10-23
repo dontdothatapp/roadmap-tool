@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromDay, isoWeek, quarterOf, toDay, weekday } from '../src/shared/dates.ts';
+import { fmtDays, fromDay, isoWeek, quarterOf, toDay, weekday } from '../src/shared/dates.ts';
 import { MemoryHistory, RoadmapCore, applyOps, applyUpdates, defaultSettings, emptyState, entitiesOf, invertOps, setEntity, stateAt, stateFromEntities } from '../src/shared/engine.ts';
 import { SECOND_CALENDAR, migrateFirstCalendar, migrateSecondCalendar, migrateSprintCalendar } from '../src/server/migrations.ts';
 import { DEFAULT_SPRINTS, SprintCalendar, calendarFor } from '../src/shared/sprints.ts';
@@ -63,6 +63,11 @@ describe('sprint calendar', () => {
     const s = cal.get(4);
     expect(cal.nearestBoundary(s.start + 3)).toBe(s.start);
     expect(cal.nearestBoundary(s.end - 2)).toBe(s.end);
+  });
+
+  it('names a sprint\'s days for the header, the last one included', () => {
+    expect(fmtDays(toDay('2026-10-01'), toDay('2026-10-15'))).toBe('1–14');
+    expect(fmtDays(toDay('2026-10-29'), toDay('2026-11-05'))).toBe('29–4');
   });
 });
 

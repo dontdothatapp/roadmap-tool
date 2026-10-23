@@ -22,6 +22,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - Things open in place and push what's below down, rather than rearranging the roadmap.
 - Per-person view settings (zoom, grouping, open umbrellas…) are remembered in the browser; the roadmap itself is
   shared.
+- Colour is used sparingly: where we are is only the red today line (no tinted current sprint, quarter or month),
+  and the timeline header takes its cue from the owner's Figma roadmap (see Sprints and calendar).
 
 ## Sprints and calendar
 
@@ -29,6 +31,12 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   named after the ISO week they start in: BB39 (Sep 24–30), W40 (Oct 1–14), W42 (Oct 15–28), BB44 (Oct 29–Nov 4).
   The anchor is 2026-10-01. Two earlier built-in calendars are migrated automatically (`src/server/migrations.ts`).
 - Everything snaps to sprints. A new phase or initiative starts as one sprint.
+- The timeline header reads like the Figma roadmap the company used before: one clear month name each (the year
+  only on January), and under it each sprint as a soft block of its own with its code and its days centred
+  ("W42" over "15–28"; "29–4" across a month's end), in the UI font, no separators or monospace. Blocks are set
+  apart by small gaps rather than lines. Narrow blocks drop the days, then the code.
+- Brilliant Basics weeks are marked quietly: a faint flat tint down their column and a slightly darker header
+  block, no stripes.
 
 ## Initiatives and the details drawer
 
@@ -52,8 +60,9 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   parts'. Rename an umbrella by opening it and editing its title.
 - Cross-linking: a part shows its umbrella's outcomes and can add its own; the umbrella shows its parts'
   outcomes. Each outcome counts once in impact. The one-pager belongs to the umbrella and is shared by all parts.
-- Team view shows parts, named in two lines: the umbrella small and dimmer on top, the part's name below (left out
-  when the part's name already starts with the umbrella's).
+- Team view shows parts, named in two lines: the umbrella as a small white tag on top (its name in the umbrella's
+  colour after a dot of it), the part's name below. When the part's name already starts with the umbrella's, only
+  the dot shows, before the name.
 - Leadership and Alignment show the umbrella as one bar. A bare chevron (no count, no background) at the end of
   its bar opens that one umbrella; it stays on its line, its parts appear in new lines under it in a light box,
   and the lines below move down. Display → Expand all / Collapse all opens or closes all of them.
@@ -75,8 +84,10 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - A free board: no names column (names are in the bars), rows chosen by the team, several items to a row when
   dates don't clash, two-row bars for long names, drawing new items on any row including empty ones below, a
   small gap between back-to-back items.
-- Pastel colours: items on their own share one default (Mist), changeable per item in the drawer; each umbrella's
-  parts get a colour of their own, unique among umbrellas, picked automatically and kept.
+- Every bar is the same colour (the Mist pastel), whatever it is. Umbrellas are told apart by the tags on their
+  parts instead: each umbrella gets a colour of its own, unique among umbrellas, picked automatically and kept,
+  changeable in the drawer of the umbrella or any part. Initiatives on their own have no colour choice (an older
+  per-item colour stays in the data but isn't shown).
 - Optional grouping by umbrella (a lane per umbrella; dragging into a lane re-parents), strategic bet, funnel
   stage or tag.
 - Sprint overview and Backlog are side panels, closed by default. The backlog lists ideas without dates, with

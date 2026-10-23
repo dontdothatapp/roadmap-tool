@@ -15,6 +15,8 @@ export interface Sprint {
   kind: string;
   /** "W42", "BB46" */
   code: string;
+  /** The type's prefix on its own, "W" or "BB": what's left of the code where there's no room for it. */
+  prefix: string;
   highlight: boolean;
   weeks: number;
 }
@@ -79,6 +81,7 @@ export class SprintCalendar {
       label: byWeek ? `${entry.label} · week ${number}` : `${entry.label} ${number}`,
       kind: entry.label,
       code: `${entry.short}${number}`,
+      prefix: entry.short,
       highlight: entry.highlight,
       weeks: entry.weeks,
     };

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRight, ArrowUpRight, Check, Copy, CopyPlus, FileText, Link2, Plus, Trash2, TrendingUp, X } from 'lucide-react';
-import { BOARD_COLORS, DEFAULT_BOARD_COLOR, boardColor, boardColorOf } from '../../shared/colors.ts';
+import { BOARD_COLORS, boardColor, boardColorOf } from '../../shared/colors.ts';
 import { fmtRange, relativeTime, toDay, todayDay, fromDay } from '../../shared/dates.ts';
 import { describeChange, epdLine } from '../../shared/describe.ts';
 import { formatImpact, landingMonth, landingText, monthLabel, monthNo, monthStart } from '../../shared/impact.ts';
@@ -299,8 +299,12 @@ export function ItemDrawer({ id }: { id: ID }) {
             </>
           )}
 
-          <label htmlFor="dr-color">Colour</label>
-          <ColorField item={item} state={state} readOnly={readOnly} />
+          {(isUmbrella || umbrellaOf(state, item)) && (
+            <>
+              <label htmlFor="dr-color">Colour</label>
+              <ColorField item={item} state={state} readOnly={readOnly} />
+            </>
+          )}
         </div>
 
         {isUmbrella ? (
@@ -599,23 +603,23 @@ function umbrellaChoices(state: RoadmapState, item: Item): Item[] {
 }
 
 /** Which initiative this is a part of: an existing one, or a new umbrella named after it (its outcomes move up). */
-/** The initiative's colour on the team board. A part wears its umbrella's, so picking one there recolours them all. */
+/**
+ * An umbrella's colour: the tag naming it on each of its parts on the team board (the bars themselves all look
+ * alike). Shown for umbrellas and parts only; a part's is its umbrella's, so picking one there recolours them all.
+ */
 function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState; readOnly: boolean }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLButtonElement>(null);
   const umbrella = umbrellaOf(state, item);
   const target = umbrella ?? item;
-  const family = !!umbrella || hasParts(state, item.id);
   const current = boardColorOf(state, item);
   const pick = (id: string) => {
     setOpen(false);
-    // On its own, the default is no colour at all (so it follows the default if that ever changes).
-    const color = !family && id === DEFAULT_BOARD_COLOR ? null : id;
-    if (color === target.color) return;
+    if (id === target.color) return;
     const name = boardColor(id).name.toLowerCase();
-    updateItem(target.id, { color }, umbrella ? `Coloured “${umbrella.title}” and its parts ${name}` : `Coloured “${item.title}” ${name}`);
+    updateItem(target.id, { color: id }, `Coloured “${target.title}” and its parts ${name}`);
   };
-  const note = umbrella ? `shared by ${umbrella.title}` : family ? 'worn by its parts' : current.id === DEFAULT_BOARD_COLOR ? 'default' : null;
+  const note = umbrella ? `shared by ${umbrella.title}` : 'on its parts’ tags';
   return (
     <>
       <button
@@ -626,10 +630,10 @@ function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState
         disabled={readOnly}
         aria-haspopup="true"
         aria-expanded={open}
-        title="Its colour on the team board"
+        title="The colour of the umbrella’s tag on its parts, on the team board"
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="color-swatch" style={{ background: current.hex }} />
+        <span className="color-swatch" style={{ background: current.ink }} />
         <span>{current.name}</span>
         {note && <span className="muted">· {note}</span>}
       </button>
@@ -642,8 +646,8 @@ function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState
               role="option"
               aria-selected={c.id === current.id}
               className={`color-option${c.id === current.id ? ' is-on' : ''}`}
-              style={{ background: c.hex }}
-              title={c.id === DEFAULT_BOARD_COLOR ? `${c.name} (default)` : c.name}
+              style={{ background: c.ink }}
+              title={c.name}
               aria-label={c.name}
               onClick={() => pick(c.id)}
             >
@@ -651,7 +655,7 @@ function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState
             </button>
           ))}
         </div>
-        <p className="color-note">{family ? 'All parts of an umbrella share its colour.' : 'Initiatives on their own share the default; umbrellas get a colour each.'}</p>
+        <p className="color-note">Each umbrella gets a colour of its own; its parts carry it on their tags.</p>
       </Popover>
     </>
   );

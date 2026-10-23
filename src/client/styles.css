@@ -79,8 +79,9 @@
   --ok: #1d7f55;
   --ok-soft: #e3f3eb;
   --today: #e5484d;
-  --hatch: rgba(22, 26, 35, 0.055);
-  --current-col: rgba(43, 89, 195, 0.055);
+  --sprint-hl: rgba(22, 26, 35, 0.028);
+  --head-block: #f1f3f6;
+  --head-block-hl: #e9ecf1;
   --grid-line: #edf0f4;
   --dep: #8a91a1;
   --key: #e7a90c;
@@ -128,8 +129,9 @@
     --ok: #4cc58e;
     --ok-soft: #173126;
     --today: #ff6369;
-    --hatch: rgba(231, 234, 240, 0.045);
-    --current-col: rgba(124, 156, 255, 0.07);
+    --sprint-hl: rgba(231, 234, 240, 0.03);
+    --head-block: #1c212b;
+    --head-block-hl: #222834;
     --grid-line: #1d222b;
     --dep: #7d8596;
     --key: #f3c241;
@@ -170,8 +172,9 @@
   --ok: #4cc58e;
   --ok-soft: #173126;
   --today: #ff6369;
-  --hatch: rgba(231, 234, 240, 0.045);
-  --current-col: rgba(124, 156, 255, 0.07);
+  --sprint-hl: rgba(231, 234, 240, 0.03);
+  --head-block: #1c212b;
+  --head-block-hl: #222834;
   --grid-line: #1d222b;
   --dep: #7d8596;
   --key: #f3c241;
@@ -1826,13 +1829,12 @@ body::before {
 
 .tl-tier.top {
   top: 0;
-  height: 21px;
+  height: 24px;
 }
 
 .tl-tier.bottom {
-  top: 21px;
-  height: 25px;
-  border-top: 1px solid var(--line-soft);
+  top: 24px;
+  height: 34px;
 }
 
 .tl-cell {
@@ -1847,10 +1849,12 @@ body::before {
   white-space: nowrap;
 }
 
+/* Months (or quarters): the header's anchor, so one clear name each, no year except where one starts. */
 .tl-tier.top .tl-cell {
-  font-size: 11.5px;
+  padding: 0 8px;
+  font-size: 13px;
   font-weight: 650;
-  color: var(--text-2);
+  color: var(--text);
   border-left-color: var(--line);
   /* clip (not hidden): a hidden overflow would make each cell its own scroll area and push the sticky name into it */
   overflow: clip;
@@ -1858,7 +1862,12 @@ body::before {
 
 .tl-tier.top .tl-cell > span {
   position: sticky;
-  left: calc(var(--label-w) + 6px);
+  left: calc(var(--label-w) + 8px);
+}
+
+.tl-period-note {
+  font-weight: 500;
+  color: var(--text-3);
 }
 
 /* Leadership: under each month (or quarter), the impact it's expected to gain, one funnel stage per line. */
@@ -1913,20 +1922,39 @@ body::before {
   color: var(--text);
 }
 
+/* Sprints (or months): a soft block each, set apart by a small gap rather than lines, its name centred over its days. */
 .tl-tier.bottom .tl-cell {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--text-3);
+  padding: 2px 1.5px 4px;
+  border-left: none;
 }
 
-.tl-cell.is-highlight {
-  background: repeating-linear-gradient(135deg, var(--hatch) 0 4px, transparent 4px 8px);
+.tl-block-label {
+  flex: 1;
+  align-self: stretch;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--head-block);
+  line-height: 13px;
 }
 
-.tl-cell.is-current {
-  color: var(--accent) !important;
+.tl-cell.is-highlight .tl-block-label {
+  background: var(--head-block-hl);
+}
+
+.tl-block-name {
+  font-size: 11.5px;
   font-weight: 650;
-  background-color: var(--current-col);
+  color: var(--text-2);
+}
+
+.tl-block-note {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
 }
 
 .tl-main {
@@ -1963,12 +1991,9 @@ body::before {
   bottom: 0;
 }
 
+/* Brilliant Basics weeks: a faint flat tint, enough to tell the kind of sprint apart without a pattern. */
 .tl-col.is-highlight {
-  background: repeating-linear-gradient(135deg, var(--hatch) 0 5px, transparent 5px 10px);
-}
-
-.tl-col.is-current {
-  background-color: var(--current-col);
+  background: var(--sprint-hl);
 }
 
 .tl-line {
@@ -2459,6 +2484,48 @@ body::before {
   text-overflow: ellipsis;
 }
 
+/* The team board: a part's umbrella as a small white tag, named in the umbrella's colour after a dot of it. */
+.bar-tag {
+  align-self: flex-start;
+  max-width: 100%;
+  height: 15px;
+  margin-bottom: 1px;
+  padding: 0 6px 0 5px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(20, 25, 35, 0.06);
+  color: var(--u);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-tag::before,
+.bar-dot {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--u);
+}
+
+.bar-tag::before {
+  margin-right: 4px;
+  vertical-align: 1px;
+}
+
+.bar-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: 1px;
+  box-shadow: 0 0 0 2px #fff;
+}
+
 /* Leadership: what the initiative is expected to move, small and quiet under its name. */
 .bar-impact {
   min-width: 0;
@@ -2483,7 +2550,7 @@ body::before {
 
 /* The other parts of the same umbrella as the bar under the pointer. */
 .tl-block.is-family .tl-item {
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px color-mix(in srgb, var(--c) 70%, transparent);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px color-mix(in srgb, var(--u, var(--c)) 70%, transparent);
 }
 
 .bar-title {
@@ -3136,7 +3203,7 @@ body.drag-create * {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  color: #14171f;
+  color: #fff;
   box-shadow: inset 0 0 0 1px rgba(20, 25, 35, 0.1);
   cursor: pointer;
   transition: transform 0.1s;
@@ -3840,8 +3907,9 @@ body.drag-create * {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #14171f;
-  font-weight: 550;
+  background: color-mix(in srgb, var(--u) 10%, var(--surface));
+  color: color-mix(in srgb, var(--u) 80%, var(--text));
+  font-weight: 600;
 }
 
 .palette-umbrella svg {
@@ -4708,7 +4776,7 @@ body.drag-create * {
 }
 
 .sprint-chip.is-highlight {
-  background: repeating-linear-gradient(135deg, var(--hatch) 0 4px, transparent 4px 8px);
+  background: var(--head-block);
 }
 
 .sprint-chip.is-now {
