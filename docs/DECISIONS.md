@@ -64,6 +64,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - Team view shows parts, named in two lines: the umbrella as a small white tag on top (its name in the umbrella's
   colour after a dot of it), the part's name below. When the part's name already starts with the umbrella's, only
   the dot shows, before the name.
+- Leadership and Alignment bars are 1.4 times their first height (42 px, rows 52 px): a name can take two lines,
+  or one line over the expected impact. The bet view keeps its thin Gantt bars.
 - Leadership and Alignment show the umbrella as one bar. A bare chevron (no count, no background) at the end of
   its bar opens that one umbrella; it stays on its line, its parts appear in new lines under it in a light box,
   and the lines below move down. Display → Expand all / Collapse all opens or closes all of them.
@@ -85,8 +87,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - A free board: no names column (names are in the bars), rows chosen by the team, several items to a row when
   dates don't clash, two-row bars for long names, drawing new items on any row including empty ones below, a
   small gap between back-to-back items.
-- Cards are twice the height of other views' bars (60 px, rows 78 px): room for the umbrella tag over a name that
-  wraps to two lines (three without a tag; twice that in a two-row card). Other views keep their thin bars.
+- Cards are twice the height they started at (60 px, rows 78 px): room for the umbrella tag over a name that
+  wraps to two lines (three without a tag; twice that in a two-row card).
 - Every bar is the same colour (the Mist pastel), whatever it is. Umbrellas are told apart by the tags on their
   parts instead: each umbrella gets a colour of its own, unique among umbrellas, picked automatically and kept,
   changeable in the drawer of the umbrella or any part. Initiatives on their own have no colour choice (an older

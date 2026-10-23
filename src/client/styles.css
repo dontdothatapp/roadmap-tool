@@ -2729,6 +2729,24 @@ body::before {
   -webkit-line-clamp: 5;
 }
 
+/* Leadership and Alignment: a name can take two lines, or one over the expected impact. */
+.mode-packed:not(.is-compact) .tl-text {
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.mode-packed:not(.is-compact) .bar-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.mode-packed:not(.is-compact) .bar-stack .bar-title {
+  display: block;
+  white-space: nowrap;
+}
+
 /* Dragging a bar to a row: the row it will land in. */
 .tl-rowtarget {
   position: absolute;

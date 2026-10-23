@@ -56,12 +56,13 @@ export interface Metrics {
 /**
  * Every phase mode draws one bar per row; with separate phases, the phases sit side by side in it. Compact rows
  * (a strategic bet's view) are packed lanes of one umbrella each, named in the label column, so bars are thin.
- * The team board's cards are tall enough for an umbrella tag over a name of two lines.
+ * The team board's cards are tall enough for an umbrella tag over a name of two lines; packed lanes (Leadership,
+ * Alignment) for a name of two lines, or a name over its expected impact.
  */
 export function metricsFor(mode: LayoutMode, compact = false): Metrics {
   if (compact) return { rowH: 26, barTop: 4, barH: 18, groupPad: 6, headerH: 0, collapsedH: 38, endInset: 2, sectionH: 32 };
   return mode === 'packed'
-    ? { rowH: 40, barTop: 5, barH: 30, groupPad: 10, headerH: 0, collapsedH: 40, endInset: 0, sectionH: 0 }
+    ? { rowH: 52, barTop: 5, barH: 42, groupPad: 10, headerH: 0, collapsedH: 40, endInset: 0, sectionH: 0 }
     : { rowH: 78, barTop: 9, barH: 60, groupPad: 0, headerH: 34, collapsedH: 34, endInset: 3, sectionH: 0 };
 }
 
