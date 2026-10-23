@@ -2695,6 +2695,40 @@ body::before {
   overflow-wrap: anywhere;
 }
 
+/* The team board's cards have room for a name over several lines: two under an umbrella tag, three without,
+   and twice that in a two-row card. */
+.mode-list .tl-text {
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.mode-list .bar-stack {
+  line-height: 1.25;
+}
+
+.mode-list .bar-tag {
+  margin-bottom: 3px;
+}
+
+.mode-list .bar-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+
+.mode-list .bar-stack .bar-title {
+  -webkit-line-clamp: 2;
+}
+
+.mode-list .tl-item.is-tall .bar-title {
+  -webkit-line-clamp: 6;
+}
+
+.mode-list .tl-item.is-tall .bar-stack .bar-title {
+  -webkit-line-clamp: 5;
+}
+
 /* Dragging a bar to a row: the row it will land in. */
 .tl-rowtarget {
   position: absolute;
@@ -2843,6 +2877,7 @@ body::before {
 }
 
 /* Link button on a bar: opens the one-pager (or a menu of links) without opening the details. */
+/* Opens the one-pager (or lists the links): just the icon, in the bar's text colour, like the chevron. */
 .tl-link {
   display: inline-flex;
   align-items: center;
@@ -2850,21 +2885,29 @@ body::before {
   gap: 2px;
   min-width: 20px;
   height: 20px;
-  padding: 0 4px;
+  padding: 0 2px;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  color: var(--text-2);
-  box-shadow: 0 0 0 1px rgba(15, 20, 30, 0.08), 0 1px 2px rgba(15, 20, 30, 0.14);
-  font-size: 10.5px;
-  font-weight: 650;
+  background: none;
+  color: var(--ink);
+  opacity: 0.8;
+  font-size: 11px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: opacity 0.12s, transform 0.12s;
 }
 
 .tl-link:hover,
 .tl-link:focus-visible {
-  background: var(--surface);
-  color: var(--accent);
+  opacity: 1;
+}
+
+.tl-link:hover {
+  transform: translateY(-1px);
+}
+
+.tl-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -1px;
 }
 
 .tl-item.has-actions .tl-text {

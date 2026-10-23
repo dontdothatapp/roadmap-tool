@@ -50,7 +50,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   absolute, the month it lands (monthly, not quarterly; default: the month implementation ends), and an optional
   ramp-up (e.g. 50% in July, 85% in August, full from September). No confidence field. Old `metric` and
   `confidence` values are kept in the data but not edited.
-- Link button on bars opens the one-pager (or a menu of links) without opening the details.
+- Link button on bars opens the one-pager (or a menu of links) without opening the details. Like the umbrella
+  chevron, it's just the icon (and the count), in the bar's text colour: no background or outline.
 
 ## Umbrellas and parts
 
@@ -84,6 +85,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - A free board: no names column (names are in the bars), rows chosen by the team, several items to a row when
   dates don't clash, two-row bars for long names, drawing new items on any row including empty ones below, a
   small gap between back-to-back items.
+- Cards are twice the height of other views' bars (60 px, rows 78 px): room for the umbrella tag over a name that
+  wraps to two lines (three without a tag; twice that in a two-row card). Other views keep their thin bars.
 - Every bar is the same colour (the Mist pastel), whatever it is. Umbrellas are told apart by the tags on their
   parts instead: each umbrella gets a colour of its own, unique among umbrellas, picked automatically and kept,
   changeable in the drawer of the umbrella or any part. Initiatives on their own have no colour choice (an older
@@ -122,4 +125,3 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 ## Offered, not (yet) asked for
 
 - Clicking the umbrella line on a part's bar to open the umbrella.
-- Making the link button on bars background-less like the expand chevron.

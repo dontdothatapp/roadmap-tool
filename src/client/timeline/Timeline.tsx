@@ -1311,7 +1311,7 @@ const Block = memo(function Block({
   const links = !compact && b.w >= 110 ? linksOf(item, umbrella) : [];
   // An umbrella can open to show its parts (packed views), from a small button at the end of its bar.
   const canExpand = expandable && isUmbrella && b.w >= 56;
-  const actionsW = (links.length ? (links.length > 1 ? 34 : 26) : 0) + (canExpand ? 20 : 0);
+  const actionsW = (links.length ? (links.length > 1 ? 32 : 22) : 0) + (canExpand ? 20 : 0);
   // With phases side by side the name crosses light and solid parts: draw it twice, and show the
   // light-on-dark copy only over the implementation part.
   const impl = phaseMode === 'separate' ? b.spans.find((sp) => sp.key === 'implementation') : undefined;
@@ -1454,7 +1454,7 @@ function LinkChip({ links, onMenu }: { links: QuickLink[]; onMenu: (anchor: HTML
         onClick={stop}
         onKeyDown={stop}
       >
-        <Link2 size={13} />
+        <Link2 size={16} strokeWidth={2.25} />
       </a>
     );
   }
@@ -1472,7 +1472,7 @@ function LinkChip({ links, onMenu }: { links: QuickLink[]; onMenu: (anchor: HTML
         onMenu(e.currentTarget);
       }}
     >
-      <Link2 size={13} />
+      <Link2 size={16} strokeWidth={2.25} />
       <span className="tl-link-count">{links.length}</span>
     </button>
   );
