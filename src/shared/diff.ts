@@ -36,8 +36,8 @@ function slipBetween(a: Item, b: Item, cal: SprintCalendar): number {
   return cal.spanIndexes(sb)[1] - cal.spanIndexes(sa)[1];
 }
 
-/** Layout (order, row, height, board colour) and fields no longer shown (star, per-item owner) don't count as changes. */
-const IGNORED = new Set<keyof Item>(['order', 'row', 'tall', 'color', 'key', 'owner']);
+/** Layout (order, row, height, board colour) and fields no longer shown (star, per-item owner, tags) don’t count as changes. */
+const IGNORED = new Set<keyof Item>(['order', 'row', 'tall', 'color', 'key', 'owner', 'tags']);
 
 /** What changed between two versions of the roadmap (`from` → `to`). */
 export function diffStates(from: RoadmapState, to: RoadmapState, cal: SprintCalendar): RoadmapDiff {

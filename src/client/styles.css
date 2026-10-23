@@ -669,10 +669,6 @@ a {
   color: var(--text);
 }
 
-.chip.tag.is-on {
-  --c: var(--accent);
-}
-
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -2413,11 +2409,6 @@ body::before {
   pointer-events: none;
 }
 
-.tl-item.st-done .tl-seg {
-  filter: saturate(0.25);
-  opacity: 0.62;
-}
-
 .tl-item.st-at_risk {
   box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--danger);
 }
@@ -2593,11 +2584,6 @@ body::before {
   background: var(--danger);
   color: #fff;
   font-size: 10px;
-  font-weight: 800;
-  flex: none;
-}
-
-.bar-done {
   font-weight: 800;
   flex: none;
 }
@@ -3086,10 +3072,6 @@ body::before {
   stroke-width: 1.75;
 }
 
-.dep.done {
-  opacity: 0.35;
-}
-
 .dep.active {
   stroke-width: 2.25;
   opacity: 1;
@@ -3109,11 +3091,6 @@ body::before {
 
 .dep-head.conflict {
   fill: var(--danger);
-}
-
-.dep-head.done {
-  fill: var(--dep);
-  opacity: 0.5;
 }
 
 .dep-head.active {
@@ -3222,17 +3199,32 @@ body.drag-create * {
   box-shadow: 0 0 0 2px var(--accent-ring);
 }
 
-.dr-props {
+/* Strategic bet, umbrella and its colour: two to a row, no labels (an empty field names itself). */
+.dr-fields {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: 10px 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   align-items: center;
   margin: 12px 0 6px;
 }
 
-.dr-props > label {
-  font-size: 12.5px;
+.dr-fields .select {
+  width: 100%;
+}
+
+.select.is-empty {
   color: var(--text-3);
+}
+
+.select.is-empty option {
+  color: var(--text);
+}
+
+/* At risk, in the drawer's header: just the icon, red when it's on. */
+.risk-btn.is-on,
+.risk-btn.is-on:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .color-field {
@@ -3303,47 +3295,6 @@ body.drag-create * {
   margin: 4px 12px 12px;
   font-size: 11.5px;
   color: var(--text-3);
-}
-
-.dr-props .select {
-  width: 100%;
-}
-
-/* Done and at risk: the only states worth flagging; the roadmap shows the rest. */
-.dr-flags {
-  display: flex;
-  gap: 6px;
-  margin: -2px 0 10px;
-}
-
-.flag-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  font-size: 12.5px;
-  font-weight: 550;
-  color: var(--text-2);
-}
-
-.flag-btn:hover:not(:disabled) {
-  border-color: var(--line-strong);
-  color: var(--text);
-}
-
-.flag-btn.is-done.is-on {
-  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
-  border-color: var(--ok);
-  color: var(--text);
-}
-
-.flag-btn.is-risk.is-on {
-  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
-  border-color: var(--danger);
-  color: var(--text);
 }
 
 /* Schedule: phases on one line, the picked phase's sprints on the next. */
@@ -3569,66 +3520,6 @@ body.drag-create * {
   --pc: var(--c);
 }
 
-.tag-input {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  min-height: 32px;
-  padding: 3px 26px 3px 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--chevron) no-repeat right 10px center;
-  cursor: text;
-}
-
-.tag-input.is-readonly {
-  padding-right: 6px;
-  background-image: none;
-  cursor: default;
-}
-
-.tag-input:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
-
-.tag-input input {
-  flex: 1;
-  min-width: 80px;
-  border: 0;
-  outline: none;
-  background: transparent;
-  font-size: 13px;
-  height: 24px;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  height: 22px;
-  padding: 0 4px 0 8px;
-  border-radius: 11px;
-  background: var(--surface-3);
-  font-size: 12px;
-  color: var(--text-2);
-}
-
-.tag button {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  color: var(--text-3);
-}
-
-.tag button:hover {
-  background: var(--line-strong);
-  color: var(--text);
-}
-
 .link-row {
   display: flex;
   align-items: center;
@@ -3723,20 +3614,51 @@ body.drag-create * {
   gap: 2px;
 }
 
-.deps-sub {
-  font-size: 12.5px;
-  font-weight: 650;
+/* A connection: one compact card, its direction as a small tag. */
+.dep-card {
+  gap: 4px;
+  padding: 8px 10px;
+}
+
+.dep-way {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-3);
   color: var(--text-2);
-  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.dep-way.is-in {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.dep-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The note reads as plain text until it's hovered or edited. */
+.dep-card .dep-note {
+  height: 26px;
+  margin-left: -7px;
+  padding: 0 6px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.dep-card .dep-note:hover:not(:disabled) {
+  border-color: var(--line);
 }
 
 .dep-card.is-conflict {
   border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
   background: color-mix(in srgb, var(--danger) 5%, var(--surface));
-}
-
-.dep-card.as-link:hover {
-  border-color: var(--line-strong);
 }
 
 .dep-top {
@@ -3776,15 +3698,6 @@ body.drag-create * {
   font-size: 12px;
   font-weight: 650;
   color: var(--danger);
-}
-
-.dep-fields {
-  display: flex;
-  gap: 6px;
-}
-
-.dep-fields .input {
-  flex: 1;
 }
 
 .picker {
@@ -3834,6 +3747,10 @@ body.drag-create * {
 
 .picker-empty {
   padding: 8px 6px;
+}
+
+.activity-more {
+  align-self: flex-start;
 }
 
 .activity {
@@ -3969,7 +3886,7 @@ body.drag-create * {
   white-space: nowrap;
 }
 
-/* An initiative's umbrella and tags, between its name and its team. */
+/* An initiative's umbrella, between its name and its team. */
 .palette-meta {
   display: flex;
   align-items: center;
@@ -3979,8 +3896,7 @@ body.drag-create * {
   overflow: hidden;
 }
 
-.palette-umbrella,
-.palette-tag {
+.palette-umbrella {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3989,9 +3905,6 @@ body.drag-create * {
   border-radius: 5px;
   font-size: 11.5px;
   white-space: nowrap;
-}
-
-.palette-umbrella {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -4003,12 +3916,6 @@ body.drag-create * {
 
 .palette-umbrella svg {
   flex: none;
-}
-
-.palette-tag {
-  flex: none;
-  background: var(--surface-3);
-  color: var(--text-2);
 }
 
 .palette-empty {
@@ -4290,8 +4197,6 @@ body.drag-create * {
   background: var(--surface-3);
   color: var(--text-2);
 }
-
-
 
 /* ---------------------------------------------------------------- impact */
 
@@ -5238,23 +5143,6 @@ body.drag-create * {
 .picker-check {
   flex: none;
   color: var(--accent);
-}
-
-/* A tick box, for lists you pick several from (tags). */
-.picker-box {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid var(--line-strong);
-  border-radius: 4px;
-  color: var(--accent-ink);
-}
-
-.picker-box.is-on {
-  border-color: var(--accent);
-  background: var(--accent);
 }
 
 .partof-new {

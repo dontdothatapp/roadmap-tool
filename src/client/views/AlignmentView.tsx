@@ -28,7 +28,7 @@ export function AlignmentView() {
     <div className="view">
       <ViewHeader
         title="Alignment"
-        sub="Every team on one timeline. Open an initiative to see its dependencies, or show all arrows under Display; red ones land too late."
+        sub="Every team on one timeline. Open an initiative to see its connections, or show all arrows under Display; red ones land too late."
         controls={
           <TimelineControls
             view="alignment"

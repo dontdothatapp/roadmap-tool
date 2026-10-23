@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupsFor, newItemPatch, normalizeTag, pickableInitiatives, regroupPatch, tagChoices } from '../src/client/lib/model.ts';
+import { groupsFor, newItemPatch, pickableInitiatives, regroupPatch } from '../src/client/lib/model.ts';
 import { applyOps, emptyState } from '../src/shared/engine.ts';
 import type { Item, Op } from '../src/shared/types.ts';
 
@@ -7,14 +7,13 @@ describe('newItemPatch', () => {
   it('puts a new initiative in the lane it was drawn in', () => {
     expect(newItemPatch('team', 'growth')).toEqual({ teamId: 'growth' });
     expect(newItemPatch('track', '__none')).toEqual({ trackId: null });
-    expect(newItemPatch('tag', 't:payments')).toEqual({ tags: ['payments'] });
     const stage = newItemPatch('stage', 'bottom');
     expect(stage?.outcomes).toHaveLength(1);
     expect(stage?.outcomes?.[0]).toMatchObject({ stageId: 'bottom', metric: '', impact: null });
   });
 
   it('adds nothing for lanes it cannot fill in', () => {
-    expect(newItemPatch('tag', '__none')).toBeNull();
+    expect(newItemPatch('stage', '__none')).toBeNull();
     expect(newItemPatch('none', 'all')).toBeNull();
   });
 });
@@ -62,29 +61,5 @@ describe('picking an umbrella', () => {
     const { own, others } = pickableInitiatives(state, candidates, 'a', 'speed');
     expect(own).toEqual([]);
     expect(ids(others)).toEqual(['Checkout speed']);
-  });
-});
-
-describe('picking tags', () => {
-  const create = (id: string, tags: string[]): Op => ({ kind: 'create', entity: 'item', id, data: { title: id, teamId: 't', tags } });
-  const state = applyOps(emptyState(), [create('a', ['payments', 'q4-launch']), create('b', ['payments']), create('c', ['mobile'])]).state;
-
-  it('lists every tag in use by name, with how many initiatives carry it', () => {
-    expect(tagChoices(state, '')).toEqual({
-      tags: [
-        { tag: 'mobile', count: 1 },
-        { tag: 'payments', count: 2 },
-        { tag: 'q4-launch', count: 1 },
-      ],
-      create: null,
-    });
-  });
-
-  it('narrows to what is typed and offers a new tag unless it exists', () => {
-    expect(tagChoices(state, 'pay').tags.map((t) => t.tag)).toEqual(['payments']);
-    expect(tagChoices(state, 'pay').create).toBe('pay');
-    expect(tagChoices(state, '#Launch Q4').tags.map((t) => t.tag)).toEqual(['q4-launch']);
-    expect(tagChoices(state, 'Payments').create).toBeNull();
-    expect(normalizeTag(' #Q4 launch ')).toBe('q4-launch');
   });
 });

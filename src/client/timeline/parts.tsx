@@ -281,7 +281,7 @@ export function DependencyLayer({
 }) {
   const uid = useId().replace(/:/g, '');
   const arrows = useMemo(() => {
-    const out: { key: string; d: string; tone: 'ok' | 'conflict' | 'done'; active: boolean; title: string }[] = [];
+    const out: { key: string; d: string; tone: 'ok' | 'conflict'; active: boolean; title: string }[] = [];
     // Where views show umbrellas, a part's arrows start or end at its umbrella's bar; whether one lands too late
     // still depends on the part's own dates.
     const blockOf = (item: Item) => layout.byId.get(item.id) ?? (umbrellaOf(state, item) ? layout.byId.get(item.parentId!) : undefined);
@@ -296,8 +296,7 @@ export function DependencyLayer({
         if (!showAll && !active) continue;
         const ready = deliveryEndDay(target);
         const needed = needStartDay(from);
-        const settled = dep.status === 'done' || target.status === 'done';
-        const conflict = !settled && ready !== null && needed !== null && ready > needed;
+        const conflict = ready !== null && needed !== null && ready > needed;
         const { x: x1, y: y1 } = p.outPoint;
         const { x: x2, y: y2 } = b.inPoint;
         const span = x2 - x1;
@@ -306,7 +305,7 @@ export function DependencyLayer({
         out.push({
           key: `${from.id}-${dep.id}`,
           d,
-          tone: conflict ? 'conflict' : settled ? 'done' : 'ok',
+          tone: conflict ? 'conflict' : 'ok',
           active,
           title: `${from.title} needs ${target.title}${conflict ? ' — lands too late' : ''}`,
         });
@@ -318,7 +317,7 @@ export function DependencyLayer({
   return (
     <svg className={`tl-deps${focusId ? ' has-focus' : ''}`} width={width} height={layout.height}>
       <defs>
-        {(['ok', 'conflict', 'done', 'active'] as const).map((t) => (
+        {(['ok', 'conflict', 'active'] as const).map((t) => (
           <marker key={t} id={`${uid}-${t}`} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M0,0.5 L7.5,4 L0,7.5 z" className={`dep-head ${t}`} />
           </marker>
@@ -405,7 +404,7 @@ export function HoverCard({ item, state, cal, rect, hint }: { item: Item; state:
       )}
       <div className="hc-foot">
         {team && epdLine(team) && <span>{epdLine(team)}</span>}
-        {deps.length > 0 && <span>{deps.length === 1 ? '1 dependency' : `${deps.length} dependencies`}</span>}
+        {deps.length > 0 && <span>{deps.length === 1 ? '1 connection' : `${deps.length} connections`}</span>}
         {conflicts.length > 0 && <span className="hc-warn">{conflicts.length === 1 ? '1 lands too late' : `${conflicts.length} land too late`}</span>}
       </div>
       {hint && <div className="hc-hint">{hint}</div>}

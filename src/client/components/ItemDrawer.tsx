@@ -7,8 +7,6 @@ import { formatImpact, landingMonth, landingText, monthLabel, monthNo, monthStar
 import { hasParts, linkOps, linkedOutcomes, partsOf, rollUp, umbrellaOf } from '../../shared/parts.ts';
 import { overallSpan, type SprintCalendar } from '../../shared/sprints.ts';
 import {
-  DEPENDENCY_STATUSES,
-  DEPENDENCY_STATUS_LABELS,
   IMPACT_UNITS,
   PHASES,
   PHASE_LABELS,
@@ -24,7 +22,7 @@ import {
 } from '../../shared/types.ts';
 import { displayName, uid } from '../../shared/util.ts';
 import { useHistoryRows } from '../lib/historyRows.ts';
-import { dependencyInfo, pickableInitiatives, sortedTeams, sortedTracks } from '../lib/model.ts';
+import { dependencyInfo, pickableInitiatives, sortedTeams, sortedTracks, type DependencyInfo } from '../lib/model.ts';
 import {
   closeItem,
   createItem,
@@ -40,7 +38,6 @@ import {
   useReadOnly,
   useRoadmap,
 } from '../store.ts';
-import { TagPicker } from './TagPicker.tsx';
 import { Avatar, ConfirmButton, Popover, StatusPill } from './ui.tsx';
 
 // --- small editing primitives ------------------------------------------------------------
@@ -216,6 +213,23 @@ export function ItemDrawer({ id }: { id: ID }) {
           </select>
         </div>
         <div className="dr-head-right">
+          {/* The roadmap shows where work stands; the only flag is at risk. */}
+          <button
+            type="button"
+            className={`icon-btn risk-btn${item.status === 'at_risk' ? ' is-on' : ''}`}
+            aria-pressed={item.status === 'at_risk'}
+            disabled={readOnly}
+            title={item.status === 'at_risk' ? 'At risk (click to clear)' : 'Mark at risk'}
+            aria-label="At risk"
+            onClick={() =>
+              patch(
+                { status: item.status === 'at_risk' ? 'planned' : 'at_risk' },
+                item.status === 'at_risk' ? `“${item.title}” is no longer at risk` : `Marked “${item.title}” at risk`,
+              )
+            }
+          >
+            <AlertTriangle size={16} />
+          </button>
           <button
             type="button"
             className="icon-btn"
@@ -257,55 +271,25 @@ export function ItemDrawer({ id }: { id: ID }) {
           ariaLabel="Title"
         />
 
-        {/* The roadmap shows where work stands; only done and at risk are flagged. */}
-        <div className="dr-flags">
-          <button
-            type="button"
-            className={`flag-btn is-done${item.status === 'done' ? ' is-on' : ''}`}
-            aria-pressed={item.status === 'done'}
+        {/* Fields without labels: an empty one names itself ("Strategic bet", "Part of an umbrella"). */}
+        <div className="dr-fields">
+          <select
+            id="dr-track"
+            className={`select${item.trackId ? '' : ' is-empty'}`}
+            aria-label="Strategic bet"
+            value={item.trackId ?? ''}
             disabled={readOnly}
-            onClick={() => patch({ status: item.status === 'done' ? 'planned' : 'done' }, item.status === 'done' ? `Reopened “${item.title}”` : `Marked “${item.title}” as done`)}
+            onChange={(e) => patch({ trackId: e.target.value || null })}
           >
-            <Check size={14} /> {item.status === 'done' ? 'Done' : 'Mark as done'}
-          </button>
-          <button
-            type="button"
-            className={`flag-btn is-risk${item.status === 'at_risk' ? ' is-on' : ''}`}
-            aria-pressed={item.status === 'at_risk'}
-            disabled={readOnly}
-            onClick={() => patch({ status: item.status === 'at_risk' ? 'planned' : 'at_risk' }, item.status === 'at_risk' ? `“${item.title}” is no longer at risk` : `Marked “${item.title}” at risk`)}
-          >
-            <AlertTriangle size={14} /> {item.status === 'at_risk' ? 'At risk' : 'Mark at risk'}
-          </button>
-        </div>
-
-        <div className="dr-props">
-          <label htmlFor="dr-track">Strategic bet</label>
-          <select id="dr-track" className="select" value={item.trackId ?? ''} disabled={readOnly} onChange={(e) => patch({ trackId: e.target.value || null })}>
-            <option value="">No strategic bet</option>
+            <option value="">{item.trackId ? 'No strategic bet' : 'Strategic bet'}</option>
             {sortedTracks(state).map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
             ))}
           </select>
-
-          <label htmlFor="dr-tags">Tags</label>
-          <TagInput item={item} state={state} readOnly={readOnly} />
-
-          {!isUmbrella && (
-            <>
-              <label htmlFor="dr-parent">Part of</label>
-              <PartOfField item={item} state={state} readOnly={readOnly} />
-            </>
-          )}
-
-          {(isUmbrella || umbrellaOf(state, item)) && (
-            <>
-              <label htmlFor="dr-color">Colour</label>
-              <ColorField item={item} state={state} readOnly={readOnly} />
-            </>
-          )}
+          {!isUmbrella && <PartOfField item={item} state={state} readOnly={readOnly} />}
+          {(isUmbrella || umbrella) && <ColorField item={item} state={state} readOnly={readOnly} />}
         </div>
 
         {isUmbrella ? (
@@ -340,17 +324,12 @@ export function ItemDrawer({ id }: { id: ID }) {
           <OnePagerRow
             target={umbrella ?? item}
             readOnly={readOnly}
-            note={
-              umbrella ? (
-                <>
-                  Shared by all parts of{' '}
-                  <button type="button" className="link-btn sm" onClick={() => openItem(umbrella.id)}>
-                    {umbrella.title}
-                  </button>
-                </>
-              ) : isUmbrella ? (
-                `Shared with its ${partsOf(state, item.id).length} parts`
-              ) : null
+            placeholder={
+              umbrella
+                ? `One-pager, shared by all parts of ${umbrella.title}`
+                : isUmbrella
+                  ? `One-pager, shared with its ${partsOf(state, item.id).length} parts`
+                  : 'Link to the one-pager'
             }
           />
           {umbrella && item.onePagerUrl && (
@@ -364,8 +343,8 @@ export function ItemDrawer({ id }: { id: ID }) {
           <OutcomesEditor item={item} state={state} readOnly={readOnly} />
         </Section>
 
-        <Section title="Dependencies">
-          <DependenciesEditor item={shown} state={rolled} cal={cal} readOnly={readOnly} />
+        <Section title="Connections">
+          <ConnectionsEditor item={shown} state={rolled} cal={cal} readOnly={readOnly} />
         </Section>
 
         <Section title="Activity">
@@ -587,7 +566,7 @@ function splitIntoParts(item: Item) {
         kind: 'create',
         entity: 'item',
         id,
-        data: { title: 'Part 1', teamId: item.teamId, trackId: item.trackId, tags: item.tags, phases: item.phases, row: item.row, tall: item.tall, parentId: item.id, order: item.order },
+        data: { title: 'Part 1', teamId: item.teamId, trackId: item.trackId, phases: item.phases, row: item.row, tall: item.tall, parentId: item.id, order: item.order },
       },
       { kind: 'update', entity: 'item', id: item.id, patch: { phases: {} } },
     ],
@@ -792,7 +771,8 @@ function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState
     const name = boardColor(id).name.toLowerCase();
     updateItem(target.id, { color: id }, `Coloured “${target.title}” and its parts ${name}`);
   };
-  const note = umbrella ? `shared by ${umbrella.title}` : 'on its parts’ tags';
+  // No label next to it: the note says what the colour is for.
+  const note = umbrella ? 'its umbrella’s colour' : 'its parts’ tag colour';
   return (
     <>
       <button
@@ -853,7 +833,7 @@ function PartOfField({ item, state, readOnly }: { item: Item; state: RoadmapStat
         kind: 'create',
         entity: 'item',
         id,
-        data: { title, teamId: item.teamId, trackId: item.trackId, tags: item.tags, outcomes: item.outcomes, onePagerUrl: item.onePagerUrl, phases: {}, order: item.order - 0.5 },
+        data: { title, teamId: item.teamId, trackId: item.trackId, outcomes: item.outcomes, onePagerUrl: item.onePagerUrl, phases: {}, order: item.order - 0.5 },
       },
       // The shared things move up to the umbrella: its expected outcomes and its one-pager.
       { kind: 'update', entity: 'item', id: item.id, patch: { parentId: id, ...(item.outcomes.length ? { outcomes: [] } : {}), ...(item.onePagerUrl ? { onePagerUrl: '' } : {}) } },
@@ -894,7 +874,8 @@ function PartOfField({ item, state, readOnly }: { item: Item; state: RoadmapStat
       teamId={item.teamId}
       candidates={choices}
       current={umbrella}
-      placeholder="Its own initiative"
+      placeholder="Part of an umbrella"
+      label="Part of an umbrella"
       readOnly={readOnly}
       before={umbrella ? [{ key: 'own', label: 'Its own initiative', hint: 'not part of an umbrella', run: () => link(null) }] : []}
       after={[
@@ -989,7 +970,7 @@ function PartsEditor({ item, state, cal, readOnly }: { item: Item; state: Roadma
 }
 
 /** The one-pager link of `target` (the item itself, or the umbrella whose one-pager it shares). */
-function OnePagerRow({ target, readOnly, note }: { target: Item; readOnly: boolean; note: React.ReactNode }) {
+function OnePagerRow({ target, readOnly, placeholder = 'Link to the one-pager', note }: { target: Item; readOnly: boolean; placeholder?: string; note?: React.ReactNode }) {
   return (
     <div className="onepager">
       <div className="link-row">
@@ -999,7 +980,7 @@ function OnePagerRow({ target, readOnly, note }: { target: Item; readOnly: boole
           className="input"
           type="url"
           value={target.onePagerUrl}
-          placeholder="Link to the one-pager"
+          placeholder={placeholder}
           disabled={readOnly}
           onCommit={(onePagerUrl) => updateItem(target.id, { onePagerUrl }, `Updated the one-pager of “${target.title}”`)}
         />
@@ -1011,25 +992,6 @@ function OnePagerRow({ target, readOnly, note }: { target: Item; readOnly: boole
       </div>
       {note && <div className="muted sm onepager-note">{note}</div>}
     </div>
-  );
-}
-
-/** The initiative's tags: pick several from the tags in use, or type a new one. */
-function TagInput({ item, state, readOnly }: { item: Item; state: RoadmapState; readOnly: boolean }) {
-  return (
-    <TagPicker
-      id="dr-tags"
-      state={state}
-      selected={item.tags}
-      allowNew
-      readOnly={readOnly}
-      placeholder="Add a tag"
-      onToggle={(tag) =>
-        item.tags.includes(tag)
-          ? updateItem(item.id, { tags: item.tags.filter((t) => t !== tag) }, `Removed #${tag} from “${item.title}”`)
-          : updateItem(item.id, { tags: [...item.tags, tag] }, `Tagged “${item.title}” #${tag}`)
-      }
-    />
   );
 }
 
@@ -1086,7 +1048,7 @@ function LinksEditor({ item, readOnly }: { item: Item; readOnly: boolean }) {
       ))}
       {!readOnly && !(draft && isDraft(draft.id)) && (
         <button type="button" className="btn ghost sm add-row" onClick={() => setDraft({ id: uid(), label: '', url: '' })}>
-          <Plus size={13} /> Add a link (Jira epic, Figma, research…)
+          <Plus size={13} /> Add a link
         </button>
       )}
     </div>
@@ -1127,9 +1089,6 @@ function OutcomesEditor({ item, state, readOnly }: { item: Item; state: RoadmapS
           state={state}
           showOwner={false}
         />
-      )}
-      {item.outcomes.length === 0 && !(umbrella && umbrella.outcomes.length > 0) && (
-        <p className="muted sm">Which part of the funnel will this move, by how much, and from when? Outcomes roll up in the Impact view.</p>
       )}
       {item.outcomes.map((o, i) => {
         const stage = stages.find((s) => s.id === o.stageId);
@@ -1306,32 +1265,44 @@ function RampEditor({ outcome, landing, readOnly, onChange }: { outcome: Outcome
   );
 }
 
-function DependenciesEditor({ item, state, cal, readOnly }: { item: Item; state: RoadmapState; cal: SprintCalendar; readOnly: boolean }) {
+/**
+ * The work this initiative is connected to, both ways in one list: what it needs (its own dependencies, on another
+ * initiative or on a team) and what needs it. A tag says which way, a red line when the work lands too late.
+ */
+function ConnectionsEditor({ item, state, cal, readOnly }: { item: Item; state: RoadmapState; cal: SprintCalendar; readOnly: boolean }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const idx = (d: number) => cal.indexOf(d);
-  const needs = item.dependencies.map((d) => dependencyInfo(state, item, d, idx));
-  const neededBy = Object.values(state.items).flatMap((other) =>
-    other.dependencies.filter((d) => d.itemId === item.id).map((d) => dependencyInfo(state, other, d, idx)),
-  );
-  const set = (dependencies: Dependency[], label?: string) => updateItem(item.id, { dependencies }, label ?? `Updated dependencies of “${item.title}”`);
-  const edit = (depId: string, p: Partial<Dependency>) => set(item.dependencies.map((d) => (d.id === depId ? { ...d, ...p } : d)));
+  const rows = [
+    ...item.dependencies.map((d) => ({ info: dependencyInfo(state, item, d, idx), needs: true })),
+    ...Object.values(state.items).flatMap((other) =>
+      other.dependencies.filter((d) => d.itemId === item.id).map((d) => ({ info: dependencyInfo(state, other, d, idx), needs: false })),
+    ),
+  ];
+  const set = (dependencies: Dependency[], label: string) => updateItem(item.id, { dependencies }, label);
+  const remove = ({ from, dep, target }: DependencyInfo) =>
+    updateItem(
+      from.id,
+      { dependencies: from.dependencies.filter((d) => d.id !== dep.id) },
+      `“${from.title}” no longer needs ${target ? `“${target.title}”` : (state.teams[dep.teamId ?? '']?.name ?? 'that team')}`,
+    );
 
   return (
     <div className="deps">
-      <div className="deps-sub">Needs from others</div>
-      {needs.length === 0 && <p className="muted sm">Nothing yet. Add the items or teams this work can’t finish without.</p>}
-      {needs.map((info) => {
-        const t = info.targetTeamId ? state.teams[info.targetTeamId] : null;
+      {rows.map(({ info, needs }) => {
+        // The other end: what this needs, or who needs this.
+        const other = needs ? info.target : info.from;
+        const t = state.teams[(needs ? info.targetTeamId : info.from.teamId) ?? ''];
         return (
-          <div key={info.dep.id} className={`dep-card${info.conflict ? ' is-conflict' : ''}`}>
+          <div key={`${info.from.id}-${info.dep.id}`} className={`dep-card${info.conflict ? ' is-conflict' : ''}`}>
             <div className="dep-top">
+              <span className={`dep-way${needs ? '' : ' is-in'}`}>{needs ? 'Needs' : 'Needed by'}</span>
               <span className="dep-team" style={{ '--c': t?.color ?? '#888' } as React.CSSProperties}>
                 {t?.name ?? 'Unknown team'}
               </span>
-              {info.target ? (
-                <button type="button" className="link-btn" onClick={() => openItem(info.target!.id)}>
-                  {info.target.title}
+              {other ? (
+                <button type="button" className="link-btn dep-title" onClick={() => openItem(other.id)}>
+                  {other.title}
                 </button>
               ) : info.dep.itemId ? (
                 <span className="muted">Deleted initiative</span>
@@ -1339,33 +1310,43 @@ function DependenciesEditor({ item, state, cal, readOnly }: { item: Item; state:
                 <span className="muted">Not on their roadmap yet</span>
               )}
               {!readOnly && (
-                <button type="button" className="icon-btn xs" onClick={() => set(item.dependencies.filter((d) => d.id !== info.dep.id))} aria-label="Remove dependency">
+                <button type="button" className="icon-btn xs" onClick={() => remove(info)} aria-label="Remove connection" title="Remove connection">
                   <X size={13} />
                 </button>
               )}
             </div>
             {info.conflict && (
               <div className="dep-warn">
-                <AlertTriangle size={13} /> Lands {info.lateBy} sprint{info.lateBy > 1 ? 's' : ''} after this needs it
+                <AlertTriangle size={13} />
+                {needs
+                  ? `Lands ${info.lateBy} sprint${info.lateBy > 1 ? 's' : ''} after this needs it`
+                  : `They need it ${info.lateBy} sprint${info.lateBy > 1 ? 's' : ''} earlier`}
               </div>
             )}
-            <div className="dep-fields">
-              <select id={`dr-dep-st-${info.dep.id}`} className="select sm" value={info.dep.status} disabled={readOnly} onChange={(e) => edit(info.dep.id, { status: e.target.value as Dependency['status'] })} aria-label="Agreement">
-                {DEPENDENCY_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {DEPENDENCY_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-              <CommitText id={`dr-dep-note-${info.dep.id}`} className="input sm" value={info.dep.note} placeholder="What exactly is needed?" disabled={readOnly} onCommit={(note) => edit(info.dep.id, { note })} />
-            </div>
+            {needs ? (
+              <CommitText
+                id={`dr-dep-note-${info.dep.id}`}
+                className="input sm dep-note"
+                value={info.dep.note}
+                placeholder="Add a note"
+                disabled={readOnly}
+                onCommit={(note) =>
+                  set(
+                    item.dependencies.map((d) => (d.id === info.dep.id ? { ...d, note } : d)),
+                    `Updated a connection of “${item.title}”`,
+                  )
+                }
+              />
+            ) : (
+              info.dep.note && <div className="muted sm">{info.dep.note}</div>
+            )}
           </div>
         );
       })}
       {!readOnly && (
         <>
           <button type="button" ref={setAnchor} className="btn ghost sm add-row" onClick={() => setOpen(true)}>
-            <Plus size={13} /> Add a dependency
+            <Plus size={13} /> Add a connection
           </button>
           <Popover anchor={anchor} open={open} onClose={() => setOpen(false)} width={360}>
             <DependencyPicker
@@ -1374,34 +1355,12 @@ function DependenciesEditor({ item, state, cal, readOnly }: { item: Item; state:
               onPick={(target) => {
                 setOpen(false);
                 const dep: Dependency = { id: uid(), itemId: target.itemId, teamId: target.teamId, note: '', status: 'open' };
-                set([...item.dependencies, dep], `“${item.title}” now depends on ${target.label}`);
+                set([...item.dependencies, dep], `“${item.title}” now needs ${target.label}`);
               }}
             />
           </Popover>
         </>
       )}
-
-      <div className="deps-sub">Needed by</div>
-      {neededBy.length === 0 && <p className="muted sm">No other initiative depends on this yet.</p>}
-      {neededBy.map((info) => {
-        const t = state.teams[info.from.teamId];
-        return (
-          <button key={`${info.from.id}-${info.dep.id}`} type="button" className={`dep-card as-link${info.conflict ? ' is-conflict' : ''}`} onClick={() => openItem(info.from.id)}>
-            <div className="dep-top">
-              <span className="dep-team" style={{ '--c': t?.color ?? '#888' } as React.CSSProperties}>
-                {t?.name}
-              </span>
-              <span>{info.from.title}</span>
-            </div>
-            {info.conflict && (
-              <div className="dep-warn">
-                <AlertTriangle size={13} /> They need it {info.lateBy} sprint{info.lateBy > 1 ? 's' : ''} earlier
-              </div>
-            )}
-            {info.dep.note && <div className="muted sm">{info.dep.note}</div>}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -1440,48 +1399,60 @@ function DependencyPicker({ item, state, onPick }: { item: Item; state: RoadmapS
   );
 }
 
+/** Its last two changes; the earlier ones (up to 50) behind a link. */
+const ACTIVITY_SHOWN = 2;
+
 function ItemActivity({ item, state, cal, readOnly }: { item: Item; state: RoadmapState; cal: SprintCalendar; readOnly: boolean }) {
   // Its newest 50 changes, then kept current as changes come in. Rendered with a key per initiative.
   const { rows: changes, loading } = useHistoryRows({ entityId: item.id, limit: 50, keep: (c) => c.entity === 'item' && c.entityId === item.id });
+  const [all, setAll] = useState(false);
   if (loading) return <p className="muted sm">Loading…</p>;
   if (changes.length === 0) return <p className="muted sm">No history yet.</p>;
+  const hidden = all ? 0 : Math.max(0, changes.length - ACTIVITY_SHOWN);
   return (
-    <ol className="activity">
-      {changes.map((c, i) => {
-        const d = describeChange(c, state, cal);
-        const isCurrent = i === 0;
-        return (
-          <li key={c.seq} className="activity-row">
-            <Avatar name={c.actor} size={22} />
-            <div className="activity-text">
-              <div>
-                <strong>{displayName(c.actor)}</strong> {d.verb} <span className="muted">· {relativeTime(c.ts)}</span>
+    <>
+      <ol className="activity">
+        {changes.slice(0, changes.length - hidden).map((c, i) => {
+          const d = describeChange(c, state, cal);
+          const isCurrent = i === 0;
+          return (
+            <li key={c.seq} className="activity-row">
+              <Avatar name={c.actor} size={22} />
+              <div className="activity-text">
+                <div>
+                  <strong>{displayName(c.actor)}</strong> {d.verb} <span className="muted">· {relativeTime(c.ts)}</span>
+                </div>
+                {d.details.length > 0 && (
+                  <ul className="activity-details">
+                    {d.details.map((t, j) => (
+                      <li key={j}>{t}</li>
+                    ))}
+                  </ul>
+                )}
+                {!readOnly && !isCurrent && c.after && (
+                  <button
+                    type="button"
+                    className="link-btn sm"
+                    onClick={() => {
+                      const after = c.after as Item;
+                      const restore: Record<string, unknown> = { ...after };
+                      delete restore.id;
+                      dispatch([{ kind: 'update', entity: 'item', id: item.id, patch: restore }], `Restored “${item.title}” to ${relativeTime(c.ts)}`, { undoToast: true });
+                    }}
+                  >
+                    <Copy size={11} /> Restore this version
+                  </button>
+                )}
               </div>
-              {d.details.length > 0 && (
-                <ul className="activity-details">
-                  {d.details.map((t, j) => (
-                    <li key={j}>{t}</li>
-                  ))}
-                </ul>
-              )}
-              {!readOnly && !isCurrent && c.after && (
-                <button
-                  type="button"
-                  className="link-btn sm"
-                  onClick={() => {
-                    const after = c.after as Item;
-                    const restore: Record<string, unknown> = { ...after };
-                    delete restore.id;
-                    dispatch([{ kind: 'update', entity: 'item', id: item.id, patch: restore }], `Restored “${item.title}” to ${relativeTime(c.ts)}`, { undoToast: true });
-                  }}
-                >
-                  <Copy size={11} /> Restore this version
-                </button>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+            </li>
+          );
+        })}
+      </ol>
+      {changes.length > ACTIVITY_SHOWN && (
+        <button type="button" className="link-btn sm activity-more" onClick={() => setAll((a) => !a)}>
+          {all ? 'Show only the latest' : `Show ${hidden} earlier change${hidden === 1 ? '' : 's'}`}
+        </button>
+      )}
+    </>
   );
 }

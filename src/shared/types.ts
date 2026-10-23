@@ -19,19 +19,21 @@ export interface Span {
   end: ISODate;
 }
 
-/** The roadmap itself says where work stands; an initiative is only flagged when it's done or at risk. */
-export const STATUSES = ['planned', 'at_risk', 'done'] as const;
+/**
+ * The roadmap itself says where work stands; an initiative is only flagged when it's at risk. Earlier versions
+ * also had idea, in progress and done: those read as on track.
+ */
+export const STATUSES = ['planned', 'at_risk'] as const;
 export type Status = (typeof STATUSES)[number];
 
 export const STATUS_LABELS: Record<Status, string> = {
   planned: 'On track',
   at_risk: 'At risk',
-  done: 'Done',
 };
 
 /** Labels for every status ever stored, including ones from earlier versions (they now read as on track). */
 export function statusLabel(status: string): string {
-  const legacy: Record<string, string> = { idea: 'Idea', in_progress: 'In progress' };
+  const legacy: Record<string, string> = { idea: 'Idea', in_progress: 'In progress', done: 'Done' };
   return STATUS_LABELS[status as Status] ?? legacy[status] ?? status;
 }
 
@@ -76,18 +78,16 @@ export interface Outcome {
 export const DEPENDENCY_STATUSES = ['open', 'agreed', 'done'] as const;
 export type DependencyStatus = (typeof DEPENDENCY_STATUSES)[number];
 
-export const DEPENDENCY_STATUS_LABELS: Record<DependencyStatus, string> = {
-  open: 'Not agreed yet',
-  agreed: 'Agreed',
-  done: 'Delivered',
-};
-
-/** "This item needs something from …" — either a specific roadmap item, or a team when the work isn't on their roadmap yet. */
+/**
+ * A connection, "this item needs something from …": either a specific roadmap item, or a team when the work isn't
+ * on their roadmap yet. The UI calls them connections and lists both directions together.
+ */
 export interface Dependency {
   id: ID;
   itemId: ID | null;
   teamId: ID | null;
   note: string;
+  /** No longer shown or weighed (whether it was agreed or delivered); kept for connections from earlier versions. */
   status: DependencyStatus;
 }
 
@@ -96,6 +96,7 @@ export interface Item {
   title: string;
   teamId: ID;
   trackId: ID | null;
+  /** No longer shown or edited (tags were taken out of the product); kept for initiatives from earlier versions. */
   tags: string[];
   status: Status;
   /** Key initiatives are highlighted for leadership. */

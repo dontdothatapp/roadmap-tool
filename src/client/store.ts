@@ -20,10 +20,10 @@ export const api: Api = __DEMO__ ? new LocalApi() : new HttpApi();
 export type ViewId = 'leadership' | 'alignment' | 'team' | 'bet' | 'impact' | 'history' | 'admin';
 export type TimelineView = 'leadership' | 'alignment' | 'team' | 'bet';
 export type PhaseMode = 'separate' | 'combined' | 'implementation';
-export type GroupBy = 'team' | 'track' | 'stage' | 'tag' | 'umbrella' | 'none';
+export type GroupBy = 'team' | 'track' | 'stage' | 'umbrella' | 'none';
 /** `board` is the team board's pastels (see shared/colors.ts); the other views let people pick team or track. */
 export type ColorBy = 'team' | 'track' | 'board';
-const GROUP_BYS: GroupBy[] = ['team', 'track', 'stage', 'tag', 'umbrella', 'none'];
+const GROUP_BYS: GroupBy[] = ['team', 'track', 'stage', 'umbrella', 'none'];
 const COLOR_BYS: ColorBy[] = ['team', 'track'];
 
 export interface ViewPrefs {
@@ -46,7 +46,6 @@ export interface Filters {
   teams: ID[];
   tracks: ID[];
   statuses: Status[];
-  tags: string[];
 }
 
 export interface Route {
@@ -122,7 +121,7 @@ const DEFAULT_PREFS: Record<TimelineView, ViewPrefs> = {
   bet: { phaseMode: 'combined', pxPerDay: 4.5, groupBy: 'none', colorBy: 'team', showDeps: false, collapsed: [], expanded: [], betTags: false, showParts: false },
 };
 
-const EMPTY_FILTERS: Filters = { q: '', teams: [], tracks: [], statuses: [], tags: [] };
+const EMPTY_FILTERS: Filters = { q: '', teams: [], tracks: [], statuses: [] };
 
 /** Bump when a default changes in a way saved preferences should not override. */
 const PREFS_VERSION = 2;
@@ -235,7 +234,13 @@ export const useApp = create<AppState>(() => ({
   compare: null,
   route: parseHash(typeof location !== 'undefined' ? location.hash : ''),
   prefs: mergePrefs(),
-  filters: { ...EMPTY_FILTERS, ...(saved.filters ?? {}), statuses: (saved.filters?.statuses ?? []).filter((s) => STATUSES.includes(s)) },
+  // Saved filters may hold ones that no longer exist (tags, the done status): only the current kinds are read.
+  filters: {
+    q: '',
+    teams: saved.filters?.teams ?? [],
+    tracks: saved.filters?.tracks ?? [],
+    statuses: (saved.filters?.statuses ?? []).filter((s) => STATUSES.includes(s)),
+  },
   overlay: null,
   toasts: [],
   undoStack: [],
@@ -632,7 +637,7 @@ export function clearFilters() {
 }
 
 export function activeFilterCount(f: Filters): number {
-  return f.teams.length + f.tracks.length + f.statuses.length + f.tags.length + (f.q.trim() ? 1 : 0);
+  return f.teams.length + f.tracks.length + f.statuses.length + (f.q.trim() ? 1 : 0);
 }
 
 export function setTheme(theme: AppState['theme']) {

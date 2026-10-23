@@ -1,7 +1,7 @@
 import { todayDay } from './dates.ts';
 import { MemoryHistory, RoadmapCore, emptyState } from './engine.ts';
 import { DEFAULT_SPRINTS, SprintCalendar } from './sprints.ts';
-import type { ChangeRecord, Dependency, Item, Op, Outcome, PhaseKey, RoadmapState, Snapshot, Span } from './types.ts';
+import type { ChangeRecord, Item, Op, Outcome, PhaseKey, RoadmapState, Snapshot, Span } from './types.ts';
 import { uid } from './util.ts';
 
 // Example roadmap used for first runs and the in-browser demo. Every schedule is relative to the
@@ -19,12 +19,11 @@ interface Spec {
   /** Has a one-pager and a Jira epic. */
   key?: boolean;
   description: string;
-  tags?: string[];
   d?: Range;
   u?: Range;
   i?: Range;
   outcomes?: [stage: string, impact: number, unit: Outcome['unit'], ramp?: number[]][];
-  deps?: [target: string, status: Dependency['status'], note: string, kind?: 'team'][];
+  deps?: [target: string, note: string, kind?: 'team'][];
 }
 
 const TEAMS = [
@@ -55,30 +54,26 @@ const PEOPLE = {
 const SPECS: Spec[] = [
   {
     id: 'onboarding-personalization', title: 'Onboarding personalization', team: 'growth', track: 'activation', status: 'planned', key: true,
-    tags: ['onboarding', 'personalization'],
     description: 'Tailor the first-run experience to the use case people pick at sign-up, so they reach their first success in one session.',
     d: [-5, -3], u: [-3, -1], i: [-1, 3],
     outcomes: [['mid', 4, 'pp', [60]]],
-    deps: [['event-tracking', 'agreed', 'Needs onboarding step events in the new schema']],
+    deps: [['event-tracking', 'Needs onboarding step events in the new schema']],
   },
   {
     id: 'referral-v2', title: 'Referral program v2', team: 'growth', track: 'activation', status: 'planned',
-    tags: ['acquisition'],
     description: 'Two-sided rewards and a shareable invite link inside the product.',
     d: [0, 2], u: [1, 3], i: [3, 7],
     outcomes: [['top', 6, '%']],
   },
   {
     id: 'pricing-experiments', title: 'Pricing page experiments', team: 'growth', track: 'conversion', status: 'planned',
-    tags: ['pricing', 'experiments'],
     description: 'Series of A/B tests on plan packaging, annual discount framing and social proof.',
     d: [-1, 1], i: [2, 5],
     outcomes: [['bottom', 1.5, 'pp']],
-    deps: [['experimentation', 'open', 'Need the experimentation platform for multi-variant tests']],
+    deps: [['experimentation', 'Need the experimentation platform for multi-variant tests']],
   },
   {
     id: 'seo-pages', title: 'SEO landing pages', team: 'growth', track: 'activation', status: 'planned',
-    tags: ['seo', 'acquisition'],
     description: 'Programmatic landing pages for high-intent search terms.',
     d: [4, 6], i: [6, 9],
     outcomes: [['top', 15, '%']],
@@ -90,115 +85,99 @@ const SPECS: Spec[] = [
   },
   {
     id: 'one-click-checkout', title: 'One-click checkout', team: 'checkout', track: 'conversion', status: 'planned', key: true,
-    tags: ['payments'],
     description: 'Returning customers pay with a saved method in a single tap. Biggest conversion lever on the roadmap this half.',
     d: [-6, -4], u: [-4, -1], i: [0, 4],
     outcomes: [['bottom', 3, '%', [50, 85]]],
-    deps: [['payments-api', 'agreed', 'Tokenised saved payment methods']],
+    deps: [['payments-api', 'Tokenised saved payment methods']],
   },
   {
     id: 'wallets', title: 'Apple Pay & Google Pay', team: 'checkout', track: 'conversion', status: 'planned',
-    tags: ['payments', 'mobile'],
     description: 'Native wallets on web and in the app.',
     u: [1, 2], i: [3, 6],
-    deps: [['payments-api', 'open', 'Wallet tokens in the new payments API']],
+    deps: [['payments-api', 'Wallet tokens in the new payments API']],
   },
   {
     id: 'cart-emails', title: 'Cart abandonment emails', team: 'checkout', track: 'conversion', status: 'planned',
-    tags: ['lifecycle'],
     description: 'Triggered reminder sequence with the cart contents and a deep link back to checkout.',
     u: [-2, -1], i: [-1, 1],
     outcomes: [['bottom', 8, '%']],
   },
   {
-    id: 'checkout-perf', title: 'Checkout performance', team: 'checkout', track: 'foundations', status: 'done',
-    tags: ['performance'],
+    id: 'checkout-perf', title: 'Checkout performance', team: 'checkout', track: 'foundations', status: 'planned',
     description: 'Cut checkout page load (p75) from 3.1s to under 1.5s.',
     i: [-4, -1],
     outcomes: [['bottom', 0.5, '%']],
   },
   {
     id: 'payments-api', title: 'Payments API v2', team: 'platform', track: 'foundations', status: 'planned', key: true,
-    tags: ['payments', 'api'],
     description: 'New payments service with tokenised payment methods, idempotent charges and wallet support.',
     d: [-7, -5], i: [-4, 1],
   },
   {
     id: 'design-tokens', title: 'Design system tokens', team: 'platform', track: 'foundations', status: 'planned',
-    tags: ['design-system'],
     description: 'Shared colour, type and spacing tokens across web and app.',
     u: [-3, 0], i: [-1, 2],
   },
   {
     id: 'feature-flags', title: 'Feature flag service', team: 'platform', track: 'foundations', status: 'planned',
-    tags: ['infrastructure'],
     description: 'Self-serve flags with percentage rollouts and audit log.',
     d: [-1, 0], i: [0, 3],
   },
   {
     id: 'observability', title: 'Observability upgrade', team: 'platform', track: 'foundations', status: 'planned',
-    tags: ['reliability'],
     description: 'Tracing across services and SLO dashboards for every team.',
     i: [4, 8],
   },
   {
     id: 'mobile-onboarding', title: 'Mobile onboarding redesign', team: 'mobile', track: 'activation', status: 'planned', key: true,
-    tags: ['onboarding', 'mobile'],
     description: 'Bring the personalised onboarding to the app, using the new design system.',
     d: [-2, 0], u: [0, 3], i: [3, 7],
     outcomes: [['mid', 3, 'pp']],
     deps: [
-      ['onboarding-personalization', 'agreed', 'Reuse the personalisation rules and copy'],
-      ['design-tokens', 'agreed', 'Tokens available in the app'],
+      ['onboarding-personalization', 'Reuse the personalisation rules and copy'],
+      ['design-tokens', 'Tokens available in the app'],
     ],
   },
   {
     id: 'push-preferences', title: 'Push notification preferences', team: 'mobile', track: 'retention', status: 'planned',
-    tags: ['notifications'],
     description: 'Let people choose topics and quiet hours instead of all-or-nothing.',
     u: [-2, -1], i: [-1, 2],
     outcomes: [['retention', 1, 'pp']],
   },
   {
     id: 'offline-mode', title: 'Offline mode', team: 'mobile', track: 'retention', status: 'planned',
-    tags: ['mobile'],
     description: 'Browse saved content and queue actions without a connection.',
     d: [3, 5], u: [5, 7], i: [7, 12],
     outcomes: [['retention', 2, '%']],
-    deps: [['platform', 'open', 'Sync API endpoints for the offline action queue', 'team']],
+    deps: [['platform', 'Sync API endpoints for the offline action queue', 'team']],
   },
   {
     id: 'app-quality', title: 'Crash-free sessions push', team: 'mobile', track: 'foundations', status: 'planned',
-    tags: ['quality'],
     description: 'Fix the top 20 crashes and add release health gates.',
     i: [2, 4],
   },
   {
     id: 'event-tracking', title: 'Unified event tracking', team: 'data', track: 'foundations', status: 'planned', key: true,
-    tags: ['analytics'],
     description: 'One event schema and pipeline for web, app and backend.',
     d: [-6, -4], i: [-4, 0],
   },
   {
     id: 'experimentation', title: 'Experimentation platform', team: 'data', track: 'foundations', status: 'planned',
-    tags: ['experiments'],
     description: 'Assignment, exposure logging and automated readouts.',
     d: [-1, 1], i: [1, 5],
   },
   {
     id: 'recommendations', title: 'Recommendations engine v1', team: 'data', track: 'retention', status: 'planned',
-    tags: ['ml', 'personalization'],
     description: '“Picked for you” on home and in emails, trained on the unified events.',
     d: [-1, 2], u: [2, 3], i: [3, 8],
     outcomes: [
       ['retention', 4, '%'],
       ['bottom', 2, '%'],
     ],
-    deps: [['event-tracking', 'done', 'Clean event history for training']],
+    deps: [['event-tracking', 'Clean event history for training']],
   },
   {
     id: 'churn-model', title: 'Churn prediction model', team: 'data', track: 'retention', status: 'planned',
-    tags: ['ml'],
     description: 'Score accounts weekly so lifecycle and support can intervene early.',
     d: [5, 8], i: [8, 11],
     outcomes: [['retention', 1.5, 'pp']],
@@ -206,31 +185,31 @@ const SPECS: Spec[] = [
   // Backlog: ideas with no dates yet.
   {
     id: 'winback-emails', title: 'Win-back email series', team: 'growth', track: 'retention', status: 'planned',
-    tags: ['lifecycle'], description: 'Bring lapsed users back with a three-step email series.',
+    description: 'Bring lapsed users back with a three-step email series.',
     outcomes: [['retention', 2, 'pp']],
   },
   {
     id: 'social-proof', title: 'Social proof on the pricing page', team: 'growth', track: 'conversion', status: 'planned',
-    tags: ['pricing'], description: 'Logos, reviews and usage numbers next to the plans.',
+    description: 'Logos, reviews and usage numbers next to the plans.',
     outcomes: [['bottom', 1, 'pp']],
   },
   {
     id: 'bnpl', title: 'Buy now, pay later', team: 'checkout', track: 'conversion', status: 'planned',
-    tags: ['payments'], description: 'Instalments for larger baskets.',
+    description: 'Instalments for larger baskets.',
     outcomes: [['bottom', 2, '%']],
   },
   {
     id: 'rate-limits', title: 'Rate limiting v2', team: 'platform', track: 'foundations', status: 'planned',
-    tags: ['api'], description: 'Per-customer limits with clear headers.',
+    description: 'Per-customer limits with clear headers.',
   },
   {
     id: 'ios-widgets', title: 'Home screen widgets', team: 'mobile', track: 'retention', status: 'planned',
-    tags: ['mobile'], description: 'Glanceable widgets for iOS and Android.',
+    description: 'Glanceable widgets for iOS and Android.',
     outcomes: [['retention', 1, '%']],
   },
   {
     id: 'anomaly-alerts', title: 'Metric anomaly alerts', team: 'data', track: 'foundations', status: 'planned',
-    tags: ['analytics'], description: 'Alert owners when a key metric moves unexpectedly.',
+    description: 'Alert owners when a key metric moves unexpectedly.',
   },
 ];
 
@@ -278,7 +257,6 @@ export function generateDemo(now: Date = new Date()): DemoData {
           trackId: s.track,
           status: s.status,
           description: s.description,
-          tags: s.tags ?? [],
           phases,
           onePagerUrl: s.key ? `https://docs.example.com/one-pagers/${s.id}` : '',
           links: s.key ? [{ id: uid(), label: 'Jira epic', url: `https://jira.example.com/browse/${s.team.toUpperCase().slice(0, 3)}-${100 + i}` }] : [],
@@ -287,11 +265,11 @@ export function generateDemo(now: Date = new Date()): DemoData {
           })),
           dependencies: (s.deps ?? [])
             .filter(([target]) => !(s.id === 'experimentation' && target === 'feature-flags'))
-            .map(([target, status, note, kind]) => ({
+            .map(([target, note, kind]) => ({
               id: uid(),
               itemId: kind === 'team' ? null : target,
               teamId: kind === 'team' ? target : null,
-              status,
+              status: 'open' as const,
               note,
             })),
           order: i,
@@ -312,7 +290,7 @@ export function generateDemo(now: Date = new Date()): DemoData {
   });
   const update = (id: string, patch: Record<string, unknown>): Op => ({ kind: 'update', entity: 'item', id, patch });
 
-  submit(PEOPLE.priya, at(30, 14, 20), [update('event-tracking', { status: 'done' })]);
+  submit(PEOPLE.priya, at(30, 14, 20), [update('event-tracking', { description: 'One event schema across web, app and backend. Web and backend are sending; the app follows.' })]);
   submit(PEOPLE.chloe, at(27, 11, 5), [update('design-tokens', { description: 'Shared colour, type and spacing tokens across web and app. Web is live; the app follows next sprint.' })]);
   submit(PEOPLE.tom, at(24, 16, 40), [
     update('payments-api', {
@@ -333,7 +311,7 @@ export function generateDemo(now: Date = new Date()): DemoData {
       kind: 'create',
       entity: 'item',
       id,
-      data: { title, teamId: 'checkout', trackId: 'conversion', tags: ['payments'], phases, row, parentId: 'one-click-checkout', order: 0.1 * (k + 1) },
+      data: { title, teamId: 'checkout', trackId: 'conversion', phases, row, parentId: 'one-click-checkout', order: 0.1 * (k + 1) },
     })),
     update('one-click-checkout', { phases: {} }),
   ]);
@@ -358,13 +336,13 @@ export function generateDemo(now: Date = new Date()): DemoData {
       kind: 'create', entity: 'item', id: 'review-prompts',
       data: {
         title: 'In-app review prompts', teamId: 'mobile', trackId: 'retention', status: 'planned',
-        description: 'Ask happy users for a store review at the right moment.', tags: ['mobile'],
+        description: 'Ask happy users for a store review at the right moment.',
         phases: { implementation: span([2, 3]) }, order: 10,
       },
     },
   ]);
   submit(PEOPLE.chloe, at(2, 10, 10), [update('mobile-onboarding', { phases: { ...item('mobile-onboarding').phases, ux: span([0, 2]) } })]);
-  submit(PEOPLE.leo, at(1, 9, 40), [update('cart-emails', { tags: ['lifecycle', 'email'] })]);
+  submit(PEOPLE.leo, at(1, 9, 40), [update('cart-emails', { description: 'Remind people of what they left in the cart, one hour and one day later.' })]);
 
   return { state: core.state, changes: history.changes, snapshots };
 }

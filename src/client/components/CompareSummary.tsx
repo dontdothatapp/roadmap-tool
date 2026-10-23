@@ -10,9 +10,8 @@ const FIELD_LABELS: Record<string, string> = {
   status: 'status',
   parentId: 'umbrella',
   description: 'description',
-  tags: 'tags',
   outcomes: 'expected outcomes',
-  dependencies: 'dependencies',
+  dependencies: 'connections',
   links: 'links',
   onePagerUrl: 'one-pager',
 };

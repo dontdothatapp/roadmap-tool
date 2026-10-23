@@ -57,7 +57,7 @@ import { TeamView } from './views/TeamView.tsx';
 
 const NAV: { id: ViewId; label: string; icon: typeof Users; hint: string }[] = [
   { id: 'leadership', label: 'Leadership', icon: LayoutDashboard, hint: 'The big picture by strategic bet' },
-  { id: 'alignment', label: 'Alignment', icon: Network, hint: 'All teams side by side, with dependencies' },
+  { id: 'alignment', label: 'Alignment', icon: Network, hint: 'All teams side by side, with their connections' },
   { id: 'team', label: 'Team', icon: Users, hint: 'One team’s plan, sprint by sprint' },
   { id: 'impact', label: 'Impact', icon: Target, hint: 'Expected outcomes by quarter and funnel stage' },
   { id: 'history', label: 'History', icon: HistoryIcon, hint: 'Every change, snapshots and time travel' },

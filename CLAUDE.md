@@ -85,8 +85,11 @@ The two big files are `src/client/timeline/Timeline.tsx` (rendering and the drag
   sprint edges (`end` exclusive). Phase modes: *Phases* (`separate`), *Combined*, *Implementation*.
 - **Sprints**: a repeating cadence from an anchor (`DEFAULT_SPRINTS`: Thursday 2026-10-01, 2 weeks "W",
   2 weeks "W", 1 week "BB" Brilliant Basics, named after the ISO week they start in: W40, W42, BB44).
-- **Status**: `planned | at_risk | done`. The UI only offers *Mark as done* and *Mark at risk*; "On track" is
-  never shown as a label.
+- **Status**: `planned | at_risk`. The only flag is *at risk* (an icon in the details' header); "On track" is
+  never shown as a label. Older statuses (idea, in progress, done) read as `planned` on load.
+- **Connection**: a `Dependency` in the code and data ("this item needs …"). The details list both directions
+  together (*Needs* / *Needed by*). Its `status` (agreed, delivered) is kept but no longer shown or used.
+- **Tags** were taken out of the product: `Item.tags` is kept for old data but not shown, filtered or edited.
 - **Outcome**: funnel stage + expected impact (`%`, `pp` or absolute) + landing month (`landsBy`, null = month
   implementation ends) + optional ramp-up (share of the impact per month after landing).
 - **Board** (team view): rows are stored per item (`row`, `tall` for two-row bars). **Board colour**: every bar

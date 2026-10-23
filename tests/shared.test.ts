@@ -181,6 +181,14 @@ describe('items saved by earlier versions', () => {
     expect(past.items.a.tall).toBe(false);
   });
 
+  it('read as on track when they were marked done, and keep their tags and connections untouched', () => {
+    const done = { ...old, status: 'done', tags: ['payments'], dependencies: [{ id: 'd', itemId: 'b', teamId: null, note: 'API', status: 'agreed' }] };
+    const state = stateFromEntities([{ entity: 'item', id: 'a', value: done as unknown as Item }]);
+    expect(state.items.a.status).toBe('planned');
+    expect(state.items.a.tags).toEqual(['payments']);
+    expect(state.items.a.dependencies[0]).toMatchObject({ itemId: 'b', note: 'API', status: 'agreed' });
+  });
+
   it('bring strategic bets saved before own views up to date too', () => {
     const bet = { id: 'b', name: 'Conversion', color: '#4d7c0f', order: 0, description: '' };
     const state = stateFromEntities([{ entity: 'track', id: 'b', value: bet as unknown as Track }]);

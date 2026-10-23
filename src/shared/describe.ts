@@ -68,7 +68,8 @@ function describeItemUpdate(before: Item, after: Item, ctx: Ctx): { verb: string
   if (rescheduled && verb === 'edited') verb = 'rescheduled';
   if (before.status !== after.status) {
     details.push(statusChange(before.status, after.status));
-    if (verb === 'edited') verb = after.status === 'done' ? 'completed' : 'updated';
+    // History can hold statuses from earlier versions ("done").
+    if (verb === 'edited') verb = (after.status as string) === 'done' ? 'completed' : 'updated';
   }
   if (before.key !== after.key) details.push(after.key ? 'Marked as a key initiative' : 'No longer a key initiative');
   if (before.trackId !== after.trackId) details.push(`Strategic bet: ${trackName(ctx, before.trackId)} → ${trackName(ctx, after.trackId)}`);
@@ -93,19 +94,19 @@ function describeItemUpdate(before: Item, after: Item, ctx: Ctx): { verb: string
     const afterIds = new Set(after.dependencies.map((d) => d.id));
     for (const d of after.dependencies) {
       if (!beforeIds.has(d.id)) {
-        details.push(`Now depends on ${d.itemId ? `“${itemTitle(ctx, d.itemId)}”` : teamName(ctx, d.teamId)}`);
+        details.push(`Now needs ${d.itemId ? `“${itemTitle(ctx, d.itemId)}”` : teamName(ctx, d.teamId)}`);
       }
     }
     for (const d of before.dependencies) {
       if (!afterIds.has(d.id)) {
-        details.push(`No longer depends on ${d.itemId ? `“${itemTitle(ctx, d.itemId)}”` : teamName(ctx, d.teamId)}`);
+        details.push(`No longer needs ${d.itemId ? `“${itemTitle(ctx, d.itemId)}”` : teamName(ctx, d.teamId)}`);
       }
     }
     const changed = after.dependencies.filter((d) => {
       const old = before.dependencies.find((o) => o.id === d.id);
       return old && !stableEqual(old, d);
     });
-    if (changed.length) details.push('Updated dependency details');
+    if (changed.length) details.push('Updated a connection');
   }
   // Where an initiative sits on the board (order, row, height) and its colour there are layout, not plan: minor,
   // hidden by default. Items from older versions have no row, tall or colour at all: the same as null and false.

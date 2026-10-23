@@ -23,7 +23,7 @@ export function BetView() {
   const betId = useApp((s) => s.route.betId);
   const todayToken = useTimelineShortcuts('bet');
   const bet = betId ? state.tracks[betId] : undefined;
-  const groupBy = prefs.groupBy === 'team' || prefs.groupBy === 'tag' ? prefs.groupBy : 'none';
+  const groupBy = prefs.groupBy === 'team' ? 'team' : 'none';
 
   const { groups, items, umbrellas } = useMemo(() => {
     if (!bet) return { groups: [] as GroupDef[], items: [] as Item[], umbrellas: [] as string[] };
@@ -50,13 +50,6 @@ export function BetView() {
       }
       const orphans = heads.filter((h) => !state.teams[h.teamId] || state.teams[h.teamId].archived);
       if (orphans.length) sections.push({ id: '__none', label: 'Other teams', color: null, heads: orphans });
-    } else if (groupBy === 'tag') {
-      // An initiative with several tags shows under each.
-      for (const tag of [...new Set(heads.flatMap((h) => h.tags))].sort((a, b) => a.localeCompare(b))) {
-        sections.push({ id: `t:${tag}`, label: `#${tag}`, color: null, heads: heads.filter((h) => h.tags.includes(tag)) });
-      }
-      const untagged = heads.filter((h) => h.tags.length === 0);
-      if (untagged.length) sections.push({ id: '__none', label: 'No tags', color: null, heads: untagged });
     }
     return {
       groups:
@@ -75,7 +68,6 @@ export function BetView() {
   const groupsOf = useCallback(
     (i: Item) => {
       if (groupBy === 'team') return [`${state.teams[i.teamId] && !state.teams[i.teamId].archived ? i.teamId : '__none'}|${i.id}`];
-      if (groupBy === 'tag') return i.tags.length ? i.tags.map((t) => `t:${t}|${i.id}`) : [`__none|${i.id}`];
       return [i.id];
     },
     [state, groupBy],
@@ -108,7 +100,7 @@ export function BetView() {
           </span>
         }
         sub={bet.description || 'Every umbrella and initiative in this strategic bet, a row each. Click a name to open it.'}
-        controls={<TimelineControls view="bet" groupOptions={['none', 'team', 'tag']} depsToggle extra={<UmbrellaToggles view="bet" ids={umbrellas} />} />}
+        controls={<TimelineControls view="bet" groupOptions={['none', 'team']} depsToggle extra={<UmbrellaToggles view="bet" ids={umbrellas} />} />}
       >
         <SearchField />
         <FilterButton />

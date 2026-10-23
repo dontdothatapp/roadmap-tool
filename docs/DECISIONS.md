@@ -11,7 +11,7 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   the example data in `src/shared/seed.ts` is a generic product company (Growth, Checkout, Platform, Mobile App,
   Data & ML), and examples in these docs come from it.
 - The roadmap is the layer above Jira: initiatives and their phases per sprint, not tasks.
-- Audiences: leadership (big picture, impact), cross-team syncs (alignment, dependencies), each team (sprint
+- Audiences: leadership (big picture, impact), cross-team syncs (alignment, connections), each team (sprint
   planning), and the owners of a strategic bet.
 
 ## General style the owner likes
@@ -42,8 +42,14 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 
 - No per-initiative owner: each team has an EPD trio (PM, EM, UX) set in Settings, who own everything on its
   roadmap.
-- Status is implicit in the roadmap. The only flags are **Mark as done** and **Mark at risk**; no "on track"
-  label anywhere, no starring.
+- Status is implicit in the roadmap. The only flag is **at risk**: a warning icon in the details' header, no
+  text, red when it's on. No "done" (finished work is simply in the past; old done items read as on track), no
+  "on track" label anywhere, no starring.
+- The details are compact: the strategic bet and the umbrella are two fields side by side without labels (an
+  empty one reads "Strategic bet" / "Part of an umbrella"); an umbrella or part shows its colour next to them.
+  No explanations under sections: the one-pager's sharing is in its placeholder ("One-pager, shared by all parts
+  of …"), "Add a link" has no examples, Expected outcomes has no intro. Activity shows the last two changes, the
+  rest behind "Show N earlier changes".
 - Schedule takes two lines: phase chips (Discovery, UX, Implementation), then one sprint-range picker for the
   chosen phase.
 - Expected outcomes: funnel stage (the stage *is* the metric, so no separate metric field), impact in % / pp /
@@ -52,10 +58,11 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   `confidence` values are kept in the data but not edited.
 - Link button on bars opens the one-pager (or a menu of links) without opening the details. Like the umbrella
   chevron, it's just the icon (and the count), in the bar's text colour: no background or outline.
-- Tags are a field of chips you can also type in, with a list under it of every tag in use and how many
-  initiatives carry it: tick as many as you like (the list stays open), typing narrows it, and what's typed can
-  become a new tag. A comma adds what's typed; Backspace in the empty field takes off the last tag. The tag
-  filter (Filters panel) is the same field, without making new tags; it reads "Any tag" when empty.
+- No tags (taken out in October 2026: not needed for now). Old tags stay in the data, unseen.
+- **Connections** (called dependencies before, and still in the code and data): work from other teams is more
+  often connected than blocking. One list for both directions, each tagged *Needs* or *Needed by*, with the team,
+  the initiative, a note (editable on your own side) and a red line when the work lands too late. Either side can
+  remove one. No agreed / delivered status.
 
 ## Umbrellas and parts
 
@@ -82,7 +89,7 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 ## Views
 
 ### Leadership
-- Lanes by strategic bet by default; also team, funnel stage, tag, or no grouping at all.
+- Lanes by strategic bet by default; also team, funnel stage, or no grouping at all.
 - No quarter-summary row. Instead the timeline header shows each month (zoomed in) or quarter (zoomed out) with
   the impact it is expected to gain per funnel stage, and the sprints (or months) below.
 - Bars with expected outcomes name them under the initiative's name, small and quiet: "+3% Bottom funnel · +1 pp
@@ -111,8 +118,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   parts instead: each umbrella gets a colour of its own, unique among umbrellas, picked automatically and kept,
   changeable in the drawer of the umbrella or any part. Initiatives on their own have no colour choice (an older
   per-item colour stays in the data but isn't shown).
-- Optional grouping by umbrella (a lane per umbrella; dragging into a lane re-parents), strategic bet, funnel
-  stage or tag.
+- Optional grouping by umbrella (a lane per umbrella; dragging into a lane re-parents), strategic bet or funnel
+  stage.
 - Sprint overview and Backlog are side panels, closed by default. The backlog lists ideas without dates, with
   quick add, the funnel stage each would move, and drag onto the timeline.
 
@@ -121,7 +128,7 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   sidebar entry after Team.
 - Looks like a classic Gantt: names on the left (umbrella, or the initiative when there's no umbrella), bars
   without names on the right. An umbrella is one bar like in Leadership; the chevron by its name opens it, with
-  each part on its own named line underneath. Optional grouping by team or tag, Expand all / Collapse all.
+  each part on its own named line underneath. Optional grouping by team, Expand all / Collapse all.
 
 ### Impact
 - Driver cards: strategic bet as a small note on top, the umbrella (or the initiative) as the title, the exact
@@ -140,7 +147,7 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - Sidebar: an icon rail that opens on hover (or pinned). Order: Search, Leadership, Alignment, Team (with the team
   list), bets with their own view, Impact, History; undo/redo below the views; Settings and the user at the
   bottom. No New initiative button (initiatives are drawn on the timeline; **N** still adds one).
-- Search results show the umbrella (as a chip in its colour) and tags; the team; a status only when flagged.
+- Search results show the umbrella (as a chip in its colour); the team; a status only when flagged.
 
 ## Offered, not (yet) asked for
 

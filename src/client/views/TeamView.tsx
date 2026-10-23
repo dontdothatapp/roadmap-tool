@@ -50,7 +50,7 @@ export function TeamView() {
         sub="Your plan, sprint by sprint. Tasks live in Jira; this is the layer above. Drag bars onto any row (several can share one); drag a bar’s bottom edge for two rows. Ideas without dates wait in the backlog."
         controls={
           <>
-            <TimelineControls view="team" groupOptions={['none', 'umbrella', 'track', 'stage', 'tag']} />
+            <TimelineControls view="team" groupOptions={['none', 'umbrella', 'track', 'stage']} />
             <button
               type="button"
               className={`btn sm${panel === 'sprint' ? ' is-active' : ''}`}
@@ -170,8 +170,8 @@ function SprintPanel({ teamItems, teamId, onClose }: { teamItems: Item[]; teamId
 
   // Umbrellas take their dates from their parts.
   const deps = useMemo(() => allDependencies(rollUp(state), (d) => cal.indexOf(d)), [state, cal]);
-  const incoming = deps.filter((d) => d.targetTeamId === teamId && d.from.teamId !== teamId && d.dep.status !== 'done');
-  const outgoing = deps.filter((d) => d.from.teamId === teamId && d.dep.status !== 'done');
+  const incoming = deps.filter((d) => d.targetTeamId === teamId && d.from.teamId !== teamId);
+  const outgoing = deps.filter((d) => d.from.teamId === teamId);
 
   const label = index === current ? 'Current sprint' : index === current + 1 ? 'Next sprint' : index < current ? 'Past sprint' : 'Upcoming sprint';
   return (
@@ -242,7 +242,7 @@ function SprintPanel({ teamItems, teamId, onClose }: { teamItems: Item[]; teamId
           <div className="focus-col-head">
             We need from others <span className="focus-count">{outgoing.length}</span>
           </div>
-          {outgoing.length === 0 && <div className="focus-empty">No open dependencies</div>}
+          {outgoing.length === 0 && <div className="focus-empty">Nothing needed from others</div>}
           {outgoing.map((d) => (
             <button key={`${d.from.id}-${d.dep.id}`} type="button" className={`focus-item${d.conflict ? ' is-conflict' : ''}`} onClick={() => openItem(d.from.id)}>
               {d.conflict && <AlertTriangle size={13} />}

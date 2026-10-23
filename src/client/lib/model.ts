@@ -9,7 +9,6 @@ import type { ColorBy, Filters, GroupBy } from '../store.ts';
 export const STATUS_COLORS: Record<Status, string> = {
   planned: '#9aa1ad',
   at_risk: '#d9480f',
-  done: '#4b5563',
 };
 
 export const NEUTRAL = '#6b7280';
@@ -40,33 +39,6 @@ export function sortedTracks(state: RoadmapState): Track[] {
   return Object.values(state.tracks).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 }
 
-export function allTags(state: RoadmapState): string[] {
-  const set = new Set<string>();
-  for (const i of Object.values(state.items)) for (const t of i.tags) set.add(t);
-  return [...set].sort((a, b) => a.localeCompare(b));
-}
-
-/** A tag as people type it, stored the one way: "#Q4 launch" → "q4-launch". */
-export function normalizeTag(raw: string): string {
-  return raw.trim().replace(/^#/, '').replace(/\s+/g, '-').toLowerCase();
-}
-
-/**
- * Tags to pick from as `query` is typed: those in use that have every word of it (all of them when nothing is
- * typed), by name, with how many initiatives carry each; and the new tag the query would make, unless it's taken.
- */
-export function tagChoices(state: RoadmapState, query: string): { tags: { tag: string; count: number }[]; create: string | null } {
-  const counts = new Map<string, number>();
-  for (const i of Object.values(state.items)) for (const t of i.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
-  const words = query.toLowerCase().replace(/^\s*#/, '').split(/[\s-]+/).filter(Boolean);
-  const tags = [...counts]
-    .filter(([tag]) => words.every((w) => tag.includes(w)))
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([tag, count]) => ({ tag, count }));
-  const typed = normalizeTag(query);
-  return { tags, create: typed && !counts.has(typed) ? typed : null };
-}
-
 export function matchesQuery(item: Item, state: RoadmapState, q: string): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;
@@ -80,7 +52,6 @@ export function matchesQuery(item: Item, state: RoadmapState, q: string): boolea
     item.trackId ? (state.tracks[item.trackId]?.name ?? '') : '',
     // A part is found by its umbrella's name too.
     umbrellaOf(state, item)?.title ?? '',
-    ...item.tags.map((t) => `#${t}`),
   ]
     .join(' ')
     .toLowerCase();
@@ -92,7 +63,6 @@ export function applyFilters(items: Item[], state: RoadmapState, f: Filters, opt
     if (!opts.ignoreTeams && f.teams.length && !f.teams.includes(i.teamId)) return false;
     if (f.tracks.length && !(i.trackId && f.tracks.includes(i.trackId)) && !(f.tracks.includes('none') && !i.trackId)) return false;
     if (f.statuses.length && !f.statuses.includes(i.status)) return false;
-    if (f.tags.length && !f.tags.some((t) => i.tags.includes(t))) return false;
     if (state.teams[i.teamId]?.archived) return false;
     return matchesQuery(i, state, f.q);
   });
@@ -156,7 +126,7 @@ export interface GroupDef {
 
 /**
  * Lanes for a timeline and which lanes each item belongs to. Most groupings put an item in exactly one
- * lane; tags, metrics and funnel stages can put it in several (it then appears once in each).
+ * lane; funnel stages can put it in several (it then appears once in each).
  */
 export function groupsFor(state: RoadmapState, by: GroupBy, items: Item[]): { groups: GroupDef[]; groupsOf: (i: Item) => string[] } {
   const NONE = '__none';
@@ -194,21 +164,6 @@ export function groupsFor(state: RoadmapState, by: GroupBy, items: Item[]): { gr
     if (items.some((i) => of(i)[0] === NONE)) groups.push({ id: NONE, label: 'No umbrella', color: null });
     return { groups, groupsOf: of };
   }
-  if (by === 'tag') {
-    // Lanes come from the tags in use.
-    const values = (i: Item): { key: string; label: string }[] => i.tags.map((t) => ({ key: `t:${t}`, label: `#${t}` }));
-    const labels = new Map<string, string>();
-    for (const i of items) for (const v of values(i)) if (!labels.has(v.key)) labels.set(v.key, v.label);
-    const groups: GroupDef[] = [...labels.entries()]
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([id, label]) => ({ id, label, color: null }));
-    const of = (i: Item) => {
-      const keys = [...new Set(values(i).map((v) => v.key))];
-      return keys.length ? keys : [NONE];
-    };
-    if (items.some((i) => of(i)[0] === NONE)) groups.push({ id: NONE, label: 'No tags', color: null });
-    return { groups, groupsOf: of };
-  }
   // No grouping: one lane (named only where lanes have names, e.g. leadership's label column).
   return { groups: [{ id: '__all', label: 'All initiatives', color: null }], groupsOf: () => ['__all'] };
 }
@@ -222,17 +177,16 @@ export function regroupPatch(by: GroupBy, groupId: string, _groups: GroupDef[] =
   return null;
 }
 
-/** Fields that put a new initiative in a lane: what regroupPatch sets, plus a tag lane's tag or a funnel stage lane's stage. */
+/** Fields that put a new initiative in a lane: what regroupPatch sets, plus a funnel stage lane's stage. */
 export function newItemPatch(by: GroupBy, groupId: string, groups: GroupDef[] = []): Partial<Item> | null {
   if (groupId === '__none') return regroupPatch(by, groupId, groups);
-  if (by === 'tag' && groupId.startsWith('t:')) return { tags: [groupId.slice(2)] };
   if (by === 'stage') {
     return { outcomes: [{ id: uid(), stageId: groupId, metric: '', impact: null, unit: '%', confidence: 'medium', landsBy: null, ramp: [], note: '' }] };
   }
   return regroupPatch(by, groupId, groups);
 }
 
-/** Whether dragging between lanes changes something (tags and funnel stages are edited in the details instead). */
+/** Whether dragging between lanes changes something (funnel stages are edited in the details instead). */
 export function canRegroup(by: GroupBy): boolean {
   return by === 'team' || by === 'track' || by === 'umbrella';
 }
@@ -253,7 +207,7 @@ export function dependencyInfo(state: RoadmapState, from: Item, dep: Dependency,
   const target = dep.itemId ? (state.items[dep.itemId] ?? null) : null;
   const targetTeamId = target ? target.teamId : dep.teamId;
   let lateBy = 0;
-  if (target && dep.status !== 'done' && target.status !== 'done') {
+  if (target) {
     const ready = deliveryEndDay(target);
     const needed = needStartDay(from);
     if (ready !== null && needed !== null && ready > needed) {

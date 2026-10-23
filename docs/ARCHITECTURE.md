@@ -27,9 +27,9 @@ identical with or without a server.
 
 `RoadmapState = { settings, teams, tracks, items }`, keyed by id.
 
-- `Item` (an initiative): title, `teamId`, `trackId` (strategic bet), tags, `status`, description, `phases`
+- `Item` (an initiative): title, `teamId`, `trackId` (strategic bet), `tags` (kept, not shown), `status`, description, `phases`
   (`discovery` / `ux` / `implementation`, each `{ start, end }` ISO dates, end exclusive), `onePagerUrl`,
-  `links`, `outcomes`, `dependencies` (on an item or on a team), `order`, `row` and `tall` (team board),
+  `links`, `outcomes`, `dependencies` (connections in the UI: on an item or on a team), `order`, `row` and `tall` (team board),
   `parentId` (umbrella), `color` (board colour id). `key` and `owner` are kept for old data but no longer shown.
 - `Team`: name, colour, order, `archived`, and its owners `pm` / `em` / `ux`.
 - `Track` (strategic bet): name, colour, order, description, `ownView`.
@@ -136,19 +136,18 @@ being viewed or compared against), undo/redo stacks, toasts, overlays.
 Shell (`App.tsx`): sidebar (an icon rail that opens on hover, or pinned), item drawer, search (`CommandPalette`),
 shortcuts help, global keys (N, 1–5, T, +/−, arrows), presence, toasts.
 
-`components/ItemDrawer.tsx` is the initiative details panel: title, flags, strategic bet, tags, umbrella
-("Part of"), umbrella colour (umbrellas and parts only), schedule (phase chips + sprint range picker) or parts, description, one-pager and
-links, expected outcomes (with ramp-up), dependencies, activity.
+`components/ItemDrawer.tsx` is the initiative details panel: the at-risk flag in its header, title, strategic bet
+and umbrella ("Part of") side by side, umbrella colour (umbrellas and parts only), schedule (phase chips + sprint
+range picker) or parts, description, one-pager and links, expected outcomes (with ramp-up), connections (both
+directions, `ConnectionsEditor`), activity (last two, then the rest on request).
 
-`components/TagPicker.tsx`: tags as chips in a field with a list to tick several from (the drawer's tags, which
-can make new ones, and the tag filter). `components/ui.tsx` has the shared bits, among them `Popover`, which
+`components/ui.tsx` has the shared bits, among them `Popover`, which
 keeps a stack of open popovers so one can open inside another (a click in the inner one doesn't close the
 outer, Escape closes only the top one).
 
 `lib/model.ts`: sorting, filters (`applyFilters`, `matchesQuery`), `groupsFor` (lanes and which lanes an item is
 in), `regroupPatch` / `newItemPatch` (what dragging into a lane, or drawing in it, sets), `colorOf`, `inkOn`,
-`pickableInitiatives` (the umbrella picker's list: own team, umbrellas first), `tagChoices` / `normalizeTag` (the
-tag picker's list),
+`pickableInitiatives` (the umbrella picker's list: own team, umbrellas first),
 dependency checks (`dependencyInfo`: does the work land before it's needed).
 
 ### The timeline (`timeline/`)

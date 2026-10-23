@@ -1348,7 +1348,6 @@ const Block = memo(function Block({
         </>
       )}
       {item.status === 'at_risk' && <span className="bar-flag" aria-label="At risk">!</span>}
-      {item.status === 'done' && <span className="bar-done" aria-label="Done">✓</span>}
       {badge && <span className={`cmp-badge ${badge.tone}`}>{badge.text}</span>}
     </>
   );

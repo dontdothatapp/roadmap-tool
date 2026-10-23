@@ -6,7 +6,7 @@ import { ApiError, type Api, type Bootstrap, type ChangeQuery, type LiveHandlers
 
 // Bumped when the example data changes in ways an old saved demo can't show, so saved demos start over
 // (v2: week-numbered sprints; v3: cycles from Oct 1, 2026; v4: team owners and backlog ideas; v5: initiative parts; v6: a strategic bet with its own view).
-const STORAGE_KEY = 'roadmap-anywhere-demo-v6';
+const STORAGE_KEY = 'roadmap-anywhere-demo-v7';
 
 interface Saved {
   state: RoadmapState;

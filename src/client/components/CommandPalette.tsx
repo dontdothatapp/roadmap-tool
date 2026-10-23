@@ -12,7 +12,7 @@ interface Entry {
   group: string;
   label: string;
   hint?: string;
-  /** Shown before the hint: an initiative's umbrella and tags. */
+  /** Shown before the hint: an initiative's umbrella. */
   meta?: React.ReactNode;
   color?: string;
   icon?: React.ReactNode;
@@ -144,13 +144,11 @@ export function CommandPalette() {
   );
 }
 
-/** The umbrella an initiative is part of (or, for an umbrella, how many parts it has), then its tags. */
+/** The umbrella an initiative is part of (or, for an umbrella, how many parts it has). */
 function ItemMeta({ item, state }: { item: Item; state: RoadmapState }) {
   const umbrella = umbrellaOf(state, item);
   const parts = umbrella ? 0 : partsOf(state, item.id).length;
-  const tags = item.tags.slice(0, 3);
-  const more = item.tags.length - tags.length;
-  if (!umbrella && !parts && tags.length === 0) return null;
+  if (!umbrella && !parts) return null;
   return (
     <span className="palette-meta">
       {umbrella && (
@@ -165,12 +163,6 @@ function ItemMeta({ item, state }: { item: Item; state: RoadmapState }) {
           {parts} part{parts === 1 ? '' : 's'}
         </span>
       )}
-      {tags.map((t) => (
-        <span key={t} className="palette-tag">
-          #{t}
-        </span>
-      ))}
-      {more > 0 && <span className="palette-tag">+{more}</span>}
     </span>
   );
 }

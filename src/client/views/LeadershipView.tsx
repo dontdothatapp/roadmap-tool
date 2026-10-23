@@ -65,7 +65,7 @@ export function LeadershipView() {
         controls={
           <TimelineControls
             view="leadership"
-            groupOptions={['track', 'team', 'stage', 'tag', 'none']}
+            groupOptions={['track', 'team', 'stage', 'none']}
             colorOptions
             depsToggle
             extra={

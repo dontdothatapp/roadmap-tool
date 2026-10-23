@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Crosshair, Filter, Search, SlidersHorizontal, X } from 'lucide-react';
 import { STATUSES, STATUS_LABELS, type Status } from '../../shared/types.ts';
-import { allTags, sortedTeams, sortedTracks, STATUS_COLORS } from '../lib/model.ts';
+import { sortedTeams, sortedTracks, STATUS_COLORS } from '../lib/model.ts';
 import { uiBus } from '../lib/bus.ts';
 import { activeFilterCount, clearFilters, setFilters, setPrefs, useApp, useRoadmap, type ColorBy, type GroupBy, type PhaseMode, type TimelineView } from '../store.ts';
 import { MAX_ZOOM, MIN_ZOOM } from '../timeline/Timeline.tsx';
-import { TagPicker } from './TagPicker.tsx';
 import { Popover, Segmented, Toggle } from './ui.tsx';
 
 /**
@@ -72,7 +71,6 @@ export function TimelineControls({
     track: 'Strategic bet',
     umbrella: 'Umbrella',
     stage: 'Funnel stage',
-    tag: 'Tag',
   };
   const hasMenu = !!(groupOptions || colorOptions || depsToggle || extra);
   return (
@@ -144,7 +142,7 @@ export function TimelineControls({
                   </select>
                 </label>
               )}
-              {depsToggle && <Toggle id={`${view}-deps`} checked={prefs.showDeps} onChange={(showDeps) => setPrefs(view, { showDeps })} label="Show all dependency arrows" />}
+              {depsToggle && <Toggle id={`${view}-deps`} checked={prefs.showDeps} onChange={(showDeps) => setPrefs(view, { showDeps })} label="Show all connection arrows" />}
               {extra}
             </div>
           </Popover>
@@ -216,7 +214,7 @@ export function SearchField() {
         id="filter-search"
         value={q}
         onChange={(e) => setFilters({ q: e.target.value })}
-        placeholder="Filter by name, team or #tag"
+        placeholder="Filter by name or team"
         aria-label="Filter initiatives"
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
@@ -240,7 +238,6 @@ export function FilterButton({ hideTeams = false }: { hideTeams?: boolean }) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const count = activeFilterCount({ ...filters, q: '', teams: hideTeams ? [] : filters.teams });
-  const tags = allTags(state);
   return (
     <>
       <button type="button" ref={setAnchor} className={`btn${count ? ' is-active' : ''}`} onClick={() => setOpen((o) => !o)} aria-label="Filters" title="Filters">
@@ -303,14 +300,6 @@ export function FilterButton({ hideTeams = false }: { hideTeams?: boolean }) {
               ))}
             </div>
           </section>
-          {tags.length > 0 && (
-            <section>
-              <h4>
-                <label htmlFor="filter-tags">Tags</label>
-              </h4>
-              <TagPicker id="filter-tags" state={state} selected={filters.tags} placeholder="Any tag" onToggle={(t) => setFilters({ tags: toggle(filters.tags, t) })} />
-            </section>
-          )}
           <div className="filters-foot">
             <button type="button" className="btn ghost sm" onClick={clearFilters} disabled={activeFilterCount(filters) === 0}>
               Clear all filters
