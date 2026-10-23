@@ -126,7 +126,7 @@ being viewed or compared against), undo/redo stacks, toasts, overlays.
 | View | File | How it's built |
 | --- | --- | --- |
 | Leadership | `LeadershipView.tsx` | `rollUp` state, `umbrellaItems` (umbrellas and standalone items that pass filters), lanes from `groupsFor` (strategic bet by default, or team / stage / tag / none), packed timeline with expected impact in the header (`outcomes` prop, with `was` drivers when comparing) and under each bar's name (`impactLines`) |
-| Alignment | `AlignmentView.tsx` | Same as leadership, lanes by team, no impact header |
+| Alignment | `AlignmentView.tsx` | Same as leadership, lanes by team, no impact header; or, with `showParts`, parts and standalone items (`partItems`), each part tagged with its umbrella |
 | Team | `TeamView.tsx` | One team's parts and standalone items; list mode (the free board, names in bars, stored rows), one bar colour with each part's umbrella as a coloured tag (`colorBy 'board'`), optional grouping (umbrella, bet, stage, tag); Sprint overview and Backlog side panels |
 | Strategic bet | `BetView.tsx` | One bet: compact timeline, a row per umbrella or standalone item named in the label column, umbrellas open into one named line per part, optional team / tag sections |
 | Impact | `ImpactView.tsx` | Funnel stage × period matrix of impact gained, with a drivers panel |
@@ -142,6 +142,8 @@ links, expected outcomes (with ramp-up), dependencies, activity.
 
 `lib/model.ts`: sorting, filters (`applyFilters`, `matchesQuery`), `groupsFor` (lanes and which lanes an item is
 in), `regroupPatch` / `newItemPatch` (what dragging into a lane, or drawing in it, sets), `colorOf`, `inkOn`,
+`pickableInitiatives` (the umbrella picker's list: own team, umbrellas first), `tagChoices` / `normalizeTag` (the
+tag picker's list),
 dependency checks (`dependencyInfo`: does the work land before it's needed).
 
 ### The timeline (`timeline/`)

@@ -338,7 +338,8 @@ export function DependencyLayer({
   );
 }
 
-export function HoverCard({ item, state, cal, rect }: { item: Item; state: RoadmapState; cal: SprintCalendar; rect: DOMRect }) {
+/** `hint`: what a click does, when it isn't opening the details (an umbrella that opens in place). */
+export function HoverCard({ item, state, cal, rect, hint }: { item: Item; state: RoadmapState; cal: SprintCalendar; rect: DOMRect; hint?: string }) {
   const team = state.teams[item.teamId];
   const track = item.trackId ? state.tracks[item.trackId] : null;
   const width = 340;
@@ -407,6 +408,7 @@ export function HoverCard({ item, state, cal, rect }: { item: Item; state: Roadm
         {deps.length > 0 && <span>{deps.length === 1 ? '1 dependency' : `${deps.length} dependencies`}</span>}
         {conflicts.length > 0 && <span className="hc-warn">{conflicts.length === 1 ? '1 lands too late' : `${conflicts.length} land too late`}</span>}
       </div>
+      {hint && <div className="hc-hint">{hint}</div>}
     </div>,
     document.body,
   );

@@ -1030,6 +1030,12 @@ a {
   gap: 2px;
 }
 
+.hc-hint {
+  margin-top: -2px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
 .hc-foot {
   display: flex;
   gap: 10px;
@@ -2467,7 +2473,7 @@ body::before {
   overflow: hidden;
 }
 
-/* A part's name in two lines: its umbrella small and quiet on top, its own name below. */
+/* Two lines in a bar: a part's umbrella tag over its name, or the name over its expected impact. */
 .bar-stack {
   display: flex;
   flex-direction: column;
@@ -2475,16 +2481,7 @@ body::before {
   line-height: 1.15;
 }
 
-.bar-parent {
-  font-size: 10.5px;
-  font-weight: 500;
-  opacity: 0.72;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* The team board: a part's umbrella as a small white tag, named in the umbrella's colour after a dot of it. */
+/* A part shown on its own: its umbrella as a small white tag, named in the umbrella's colour after a dot of it. */
 .bar-tag {
   align-self: flex-start;
   max-width: 100%;
@@ -2524,6 +2521,27 @@ body::before {
   height: 7px;
   margin-right: 1px;
   box-shadow: 0 0 0 2px #fff;
+}
+
+/* Leadership, under Display: the strategic bet in a tag of its colour, under the name, before the expected impact. */
+.bar-tag.is-bet {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 60%;
+  margin: 1px 0 0;
+  color: color-mix(in srgb, var(--u) 82%, #14171f);
+}
+
+.bar-line,
+.bar-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.bar-meta:empty {
+  display: none;
 }
 
 /* Leadership: what the initiative is expected to move, small and quiet under its name. */
@@ -2715,6 +2733,7 @@ body::before {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .mode-list .bar-stack .bar-title {
@@ -2740,6 +2759,7 @@ body::before {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .mode-packed:not(.is-compact) .bar-stack .bar-title {
@@ -3555,9 +3575,17 @@ body.drag-create * {
   gap: 4px;
   align-items: center;
   min-height: 32px;
-  padding: 3px 6px;
+  padding: 3px 26px 3px 6px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
+  background: var(--chevron) no-repeat right 10px center;
+  cursor: text;
+}
+
+.tag-input.is-readonly {
+  padding-right: 6px;
+  background-image: none;
+  cursor: default;
 }
 
 .tag-input:focus-within {
@@ -4262,7 +4290,6 @@ body.drag-create * {
   background: var(--surface-3);
   color: var(--text-2);
 }
-
 
 
 
@@ -5211,6 +5238,23 @@ body.drag-create * {
 .picker-check {
   flex: none;
   color: var(--accent);
+}
+
+/* A tick box, for lists you pick several from (tags). */
+.picker-box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--accent-ink);
+}
+
+.picker-box.is-on {
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .partof-new {

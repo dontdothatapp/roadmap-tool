@@ -153,14 +153,17 @@ export function TimelineControls({
   );
 }
 
-/** A row for the display menu: open or close every umbrella in the view at once (`ids`: the umbrellas shown). */
-export function UmbrellaToggles({ view, ids }: { view: TimelineView; ids: string[] }) {
+/**
+ * A row for the display menu: open or close every umbrella in the view at once (`ids`: the umbrellas shown).
+ * `label: null` leaves out the row's name, under a row that already says "Umbrellas".
+ */
+export function UmbrellaToggles({ view, ids, label = 'Umbrellas' }: { view: TimelineView; ids: string[]; label?: string | null }) {
   const expanded = useApp((s) => s.prefs[view].expanded);
   if (ids.length === 0) return null;
   const open = ids.filter((id) => expanded.includes(id)).length;
   return (
     <div className="display-row is-stacked">
-      <span>Umbrellas</span>
+      {label && <span>{label}</span>}
       <span className="display-btns">
         <button type="button" className="btn sm" disabled={open === ids.length} onClick={() => setPrefs(view, { expanded: [...new Set([...expanded, ...ids])] })}>
           Expand all

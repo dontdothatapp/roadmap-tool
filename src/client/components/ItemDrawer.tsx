@@ -24,7 +24,7 @@ import {
 } from '../../shared/types.ts';
 import { displayName, uid } from '../../shared/util.ts';
 import { useHistoryRows } from '../lib/historyRows.ts';
-import { allTags, dependencyInfo, pickableInitiatives, sortedTeams, sortedTracks } from '../lib/model.ts';
+import { dependencyInfo, normalizeTag, pickableInitiatives, sortedTeams, sortedTracks, tagChoices } from '../lib/model.ts';
 import {
   closeItem,
   createItem,
@@ -1013,55 +1013,137 @@ function OnePagerRow({ target, readOnly, note }: { target: Item; readOnly: boole
   );
 }
 
+/**
+ * The initiative's tags as chips, in a field that also takes typing. The list under it has every tag in use (tick
+ * as many as you like), narrowed as you type, and makes a new tag from what's typed. ↑ ↓ and Enter tick, a comma
+ * adds what's typed, Backspace in the empty field takes off the last tag, Escape closes the list.
+ */
 function TagInput({ item, state, readOnly }: { item: Item; state: RoadmapState; readOnly: boolean }) {
-  const [v, setV] = useState('');
-  const all = allTags(state);
-  const add = (raw: string) => {
-    const tag = raw.trim().replace(/^#/, '').replace(/\s+/g, '-').toLowerCase();
-    if (!tag || item.tags.includes(tag)) return;
-    updateItem(item.id, { tags: [...item.tags, tag] }, `Tagged “${item.title}”`);
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [active, setActive] = useState(0);
+  const wrap = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const { tags, create } = tagChoices(state, q);
+  const rows = [...tags, ...(create ? [{ tag: create, count: 0, isNew: true }] : [])];
+  const at = Math.min(active, rows.length - 1);
+
+  useEffect(() => {
+    if (open) document.getElementById(`dr-tags-opt-${at}`)?.scrollIntoView({ block: 'nearest' });
+  }, [open, at]);
+
+  const toggle = (tag: string) => {
+    if (!tag) return;
+    if (item.tags.includes(tag)) updateItem(item.id, { tags: item.tags.filter((t) => t !== tag) }, `Removed #${tag} from “${item.title}”`);
+    else updateItem(item.id, { tags: [...item.tags, tag] }, `Tagged “${item.title}” #${tag}`);
+    // Back to the whole list, on the tag just ticked, for the next one.
+    if (q) {
+      setQ('');
+      setActive(Math.max(0, tagChoices(state, '').tags.findIndex((t) => t.tag === tag)));
+    }
   };
+  const show = () => {
+    if (readOnly || open) return;
+    setOpen(true);
+    setActive(0);
+  };
+  const close = () => {
+    setOpen(false);
+    setQ('');
+  };
+
   return (
-    <div className="tag-input">
+    <div
+      ref={wrap}
+      className={`tag-input${readOnly ? ' is-readonly' : ''}`}
+      onClick={() => {
+        if (readOnly) return;
+        input.current?.focus();
+        show();
+      }}
+    >
       {item.tags.map((t) => (
         <span key={t} className="tag">
           #{t}
           {!readOnly && (
-            <button type="button" onClick={() => updateItem(item.id, { tags: item.tags.filter((x) => x !== t) })} aria-label={`Remove tag ${t}`}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggle(t);
+              }}
+              aria-label={`Remove tag ${t}`}
+            >
               <X size={11} />
             </button>
           )}
         </span>
       ))}
       {!readOnly && (
-        <>
-          <input
-            id="dr-tags"
-            list="dr-tag-list"
-            value={v}
-            placeholder={item.tags.length ? 'Add…' : 'Add a tag'}
-            onChange={(e) => setV(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ',') {
-                e.preventDefault();
-                add(v);
-                setV('');
-              } else if (e.key === 'Backspace' && !v && item.tags.length) {
-                updateItem(item.id, { tags: item.tags.slice(0, -1) });
-              }
-            }}
-            onBlur={() => {
-              if (v.trim()) add(v);
-              setV('');
-            }}
-          />
-          <datalist id="dr-tag-list">
-            {all.filter((t) => !item.tags.includes(t)).map((t) => (
-              <option key={t} value={t} />
-            ))}
-          </datalist>
-        </>
+        <input
+          ref={input}
+          id="dr-tags"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="dr-tags-list"
+          aria-autocomplete="list"
+          aria-activedescendant={open && rows.length ? `dr-tags-opt-${at}` : undefined}
+          autoComplete="off"
+          spellCheck={false}
+          value={q}
+          placeholder={item.tags.length ? 'Add…' : 'Add a tag'}
+          onBlur={close}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setActive(0);
+            setOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (!open) return show();
+              setActive((a) => (Math.min(a, rows.length - 1) + (e.key === 'ArrowDown' ? 1 : rows.length - 1)) % Math.max(1, rows.length));
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              toggle(open && rows[at] ? rows[at].tag : normalizeTag(q));
+            } else if (e.key === ',') {
+              e.preventDefault();
+              if (normalizeTag(q) && !item.tags.includes(normalizeTag(q))) toggle(normalizeTag(q));
+            } else if (e.key === 'Backspace' && !q && item.tags.length) {
+              toggle(item.tags[item.tags.length - 1]);
+            }
+          }}
+        />
       )}
+      <Popover anchor={wrap.current} open={open} onClose={close} width={wrap.current?.offsetWidth}>
+        <div id="dr-tags-list" className="picker-options" role="listbox" aria-multiselectable="true" onMouseDown={(e) => e.preventDefault()}>
+          {rows.length === 0 && <div className="picker-empty muted sm">No tags yet: type one.</div>}
+          {rows.map((row, k) => {
+            const on = item.tags.includes(row.tag);
+            return (
+              <div
+                key={row.tag}
+                id={`dr-tags-opt-${k}`}
+                role="option"
+                aria-selected={on}
+                className={`picker-option${'isNew' in row ? ' is-action' : ''}${k === at ? ' is-active' : ''}`}
+                onMouseMove={() => k !== at && setActive(k)}
+                onClick={() => toggle(row.tag)}
+              >
+                {'isNew' in row ? (
+                  <span className="picker-label">＋ New tag #{row.tag}</span>
+                ) : (
+                  <>
+                    <span className={`picker-box${on ? ' is-on' : ''}`}>{on && <Check size={11} strokeWidth={3} />}</span>
+                    <span className="picker-label">#{row.tag}</span>
+                    <span className="picker-hint">{row.count}</span>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Popover>
     </div>
   );
 }

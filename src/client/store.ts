@@ -35,6 +35,10 @@ export interface ViewPrefs {
   collapsed: string[];
   /** Umbrellas shown open, with their parts under them (leadership, alignment and bet views). */
   expanded: string[];
+  /** Each bar names its strategic bet in a small tag of the bet's colour (leadership). */
+  betTags: boolean;
+  /** Parts on their own, each tagged with its umbrella, instead of one bar per umbrella (alignment). */
+  showParts: boolean;
 }
 
 export interface Filters {
@@ -112,10 +116,10 @@ interface AppState {
 const PREFS_KEY = 'roadmap-anywhere-prefs-v1';
 
 const DEFAULT_PREFS: Record<TimelineView, ViewPrefs> = {
-  leadership: { phaseMode: 'combined', pxPerDay: 2.4, groupBy: 'track', colorBy: 'team', showDeps: false, collapsed: [], expanded: [] },
-  alignment: { phaseMode: 'combined', pxPerDay: 5, groupBy: 'team', colorBy: 'team', showDeps: false, collapsed: [], expanded: [] },
-  team: { phaseMode: 'separate', pxPerDay: 9, groupBy: 'none', colorBy: 'team', showDeps: false, collapsed: [], expanded: [] },
-  bet: { phaseMode: 'combined', pxPerDay: 4.5, groupBy: 'none', colorBy: 'team', showDeps: false, collapsed: [], expanded: [] },
+  leadership: { phaseMode: 'combined', pxPerDay: 2.4, groupBy: 'track', colorBy: 'team', showDeps: false, collapsed: [], expanded: [], betTags: false, showParts: false },
+  alignment: { phaseMode: 'combined', pxPerDay: 5, groupBy: 'team', colorBy: 'team', showDeps: false, collapsed: [], expanded: [], betTags: false, showParts: false },
+  team: { phaseMode: 'separate', pxPerDay: 9, groupBy: 'none', colorBy: 'team', showDeps: false, collapsed: [], expanded: [], betTags: false, showParts: false },
+  bet: { phaseMode: 'combined', pxPerDay: 4.5, groupBy: 'none', colorBy: 'team', showDeps: false, collapsed: [], expanded: [], betTags: false, showParts: false },
 };
 
 const EMPTY_FILTERS: Filters = { q: '', teams: [], tracks: [], statuses: [], tags: [] };

@@ -3,6 +3,7 @@ import { collectDrivers, stageFigures, type StageFigures } from '../../shared/im
 import { partsOf, rollUp, umbrellaOf } from '../../shared/parts.ts';
 import type { ID, Item, Outcome, RoadmapState } from '../../shared/types.ts';
 import { FilterButton, SearchField, TimelineControls, UmbrellaToggles, ViewHeader, useTimelineShortcuts } from '../components/Toolbar.tsx';
+import { Toggle } from '../components/ui.tsx';
 import { groupsFor, newItemPatch, umbrellaItems } from '../lib/model.ts';
 import { setPrefs, useApp, useReadOnly, useRoadmap, useVersions } from '../store.ts';
 import { Timeline } from '../timeline/Timeline.tsx';
@@ -60,14 +61,19 @@ export function LeadershipView() {
     <div className="view">
       <ViewHeader
         title="Leadership"
-        sub="Where the company is heading, and what is at risk. Hover for details, click to open."
+        sub="Where the company is heading, and what is at risk. Hover for details, click to open; clicking an umbrella shows its parts."
         controls={
           <TimelineControls
             view="leadership"
             groupOptions={['track', 'team', 'stage', 'tag', 'none']}
             colorOptions
             depsToggle
-            extra={<UmbrellaToggles view="leadership" ids={umbrellas} />}
+            extra={
+              <>
+                <Toggle id="leadership-bets" checked={prefs.betTags} onChange={(betTags) => setPrefs('leadership', { betTags })} label="Show strategic bet tags" />
+                <UmbrellaToggles view="leadership" ids={umbrellas} />
+              </>
+            }
           />
         }
       >
@@ -98,6 +104,7 @@ export function LeadershipView() {
           todayToken={todayToken}
           outcomes={outcomes}
           impactLines={impactLines}
+          betTags={prefs.betTags}
           expanded={prefs.expanded}
           onToggleExpand={(id) =>
             setPrefs('leadership', { expanded: prefs.expanded.includes(id) ? prefs.expanded.filter((e) => e !== id) : [...prefs.expanded, id] })

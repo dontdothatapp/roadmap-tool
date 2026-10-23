@@ -46,6 +46,27 @@ export function allTags(state: RoadmapState): string[] {
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
+/** A tag as people type it, stored the one way: "#Q4 launch" → "q4-launch". */
+export function normalizeTag(raw: string): string {
+  return raw.trim().replace(/^#/, '').replace(/\s+/g, '-').toLowerCase();
+}
+
+/**
+ * Tags to pick from as `query` is typed: those in use that have every word of it (all of them when nothing is
+ * typed), by name, with how many initiatives carry each; and the new tag the query would make, unless it's taken.
+ */
+export function tagChoices(state: RoadmapState, query: string): { tags: { tag: string; count: number }[]; create: string | null } {
+  const counts = new Map<string, number>();
+  for (const i of Object.values(state.items)) for (const t of i.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+  const words = query.toLowerCase().replace(/^\s*#/, '').split(/[\s-]+/).filter(Boolean);
+  const tags = [...counts]
+    .filter(([tag]) => words.every((w) => tag.includes(w)))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([tag, count]) => ({ tag, count }));
+  const typed = normalizeTag(query);
+  return { tags, create: typed && !counts.has(typed) ? typed : null };
+}
+
 export function matchesQuery(item: Item, state: RoadmapState, q: string): boolean {
   const needle = q.trim().toLowerCase();
   if (!needle) return true;
@@ -84,6 +105,18 @@ export function applyFilters(items: Item[], state: RoadmapState, f: Filters, opt
 export function umbrellaItems(rolled: RoadmapState, f: Filters): Item[] {
   const kept = new Set(applyFilters(Object.values(rolled.items), rolled, f).map((i) => i.id));
   return Object.values(rolled.items).filter((i) => !isPart(rolled, i) && (kept.has(i.id) || partsOf(rolled, i.id).some((p) => kept.has(p.id))));
+}
+
+/**
+ * What a team reads: parts and initiatives on their own, not the umbrellas over them (alignment with parts shown,
+ * each tagged with its umbrella).
+ */
+export function partItems(state: RoadmapState, f: Filters): Item[] {
+  return applyFilters(
+    Object.values(state.items).filter((i) => !hasParts(state, i.id)),
+    state,
+    f,
+  );
 }
 
 /** An item's expected outcomes together with the linked ones: a part's umbrella's, an umbrella's parts'. */

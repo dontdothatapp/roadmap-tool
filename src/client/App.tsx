@@ -539,6 +539,7 @@ function ShortcutsModal() {
     ['Drag a bar’s bottom edge', 'Two rows high, for a long name (drag up for one)'],
     ['Drag across an empty lane', 'Add an initiative: type its name, then ↵ (⇧↵ also opens it)'],
     ['Double-click a lane', 'Add an initiative in that sprint'],
+    ['Click an umbrella', `Leadership and Alignment: show or hide its parts (${mod}-click opens its details)`],
     ['⌥ + drag, or drag the header', 'Scroll around'],
   ];
   return (

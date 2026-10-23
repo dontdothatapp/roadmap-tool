@@ -65,6 +65,8 @@ export interface TimelineProps {
   outcomes?: HeaderOutcomes | null;
   /** What each initiative is expected to move, shown small under its name (Leadership); only those with outcomes. */
   impactLines?: Map<ID, StageFigures[]> | null;
+  /** Each bar names its strategic bet in a small tag of the bet's colour (Leadership, under Display). */
+  betTags?: boolean;
   /**
    * Compact rows (a strategic bet's view): each lane is one umbrella or initiative, named in the label column,
    * with thin bars and no names in them. Clicking a name opens it.
@@ -131,6 +133,8 @@ interface QuickLink {
   label: string;
   url: string;
 }
+
+const MOD = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
 
 /** The one-pager first (a part's is its umbrella's, shared by all its parts), then the other links that have an address. */
 function linksOf(item: Item, umbrella: Item | null): QuickLink[] {
@@ -219,6 +223,7 @@ export function Timeline(props: TimelineProps) {
     onToggleExpand,
     outcomes,
     impactLines,
+    betTags = false,
     compact = false,
     onOpenGroup,
   } = props;
@@ -749,11 +754,15 @@ export function Timeline(props: TimelineProps) {
     window.addEventListener('keydown', handlers.key, true);
   }
 
-  const clickItem = (id: string) => {
+  /** A click on a bar opens its details; on an umbrella that can open in place, it shows or hides its parts. */
+  const clickItem = (id: string, expand: boolean) => {
     if (Date.now() - suppressClick.current < 250) return;
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
     setHover(null);
-    openItem(id);
+    if (expand) {
+      hoverMutedAt.current = Date.now();
+      onToggleExpand?.(id);
+    } else openItem(id);
   };
 
   // --- quick add ---------------------------------------------------------------------------
@@ -904,7 +913,7 @@ export function Timeline(props: TimelineProps) {
   const blockActions = useMemo<BlockActions>(
     () => ({
       begin: (e, rec) => beginRef.current(e, rec),
-      click: (id) => clickRef.current(id),
+      click: (id, expand) => clickRef.current(id, expand),
       enter: (id, el, umbrellaId) => {
         if (dragRef.current) return;
         enter(id, el);
@@ -1118,6 +1127,7 @@ export function Timeline(props: TimelineProps) {
                   family={family !== null && umbrellaOf(state, b.item)?.id === family}
                   open={!!expand?.has(b.item.id)}
                   impactLine={impactLines?.get(b.item.id)}
+                  betTags={betTags}
                   actions={blockActions}
                 />
               );
@@ -1171,7 +1181,19 @@ export function Timeline(props: TimelineProps) {
           Move to {layout.groups.find((g) => g.def.id === preview.targetGroup)?.def.label}
         </div>
       )}
-      {hoverItem && hover && <HoverCard item={hoverItem} state={state} cal={cal} rect={hover.rect} />}
+      {hoverItem && hover && (
+        <HoverCard
+          item={hoverItem}
+          state={state}
+          cal={cal}
+          rect={hover.rect}
+          hint={
+            expandable && partsOf(state, hoverItem.id).length > 0
+              ? `Click to ${expand?.has(hoverItem.id) ? 'hide' : 'show'} its parts · ${MOD}-click for details`
+              : undefined
+          }
+        />
+      )}
       <Popover anchor={linkMenu?.anchor ?? null} open={menuLinks.length > 0} onClose={() => setLinkMenu(null)} width={260}>
         <div className="link-menu" role="menu">
           {menuLinks.map((l, i) => (
@@ -1192,7 +1214,8 @@ type BeginRec = Pick<DragRec, 'kind' | 'item' | 'target' | 'groupId' | 'wholeIte
 /** What a bar asks of the timeline around it. */
 interface BlockActions {
   begin: (e: React.PointerEvent, rec: BeginRec) => void;
-  click: (id: ID) => void;
+  /** `expand`: show or hide an umbrella's parts instead of opening its details. */
+  click: (id: ID, expand: boolean) => void;
   enter: (id: ID, el: HTMLElement, umbrellaId: ID | null) => void;
   leave: () => void;
   toggleExpand: (id: ID) => void;
@@ -1222,6 +1245,8 @@ interface BlockProps {
   open: boolean;
   /** What the initiative is expected to move, shown small under its name (Leadership). */
   impactLine: StageFigures[] | undefined;
+  /** Name the initiative's strategic bet in a small tag before its name. */
+  betTags: boolean;
   actions: BlockActions;
 }
 
@@ -1248,6 +1273,7 @@ const Block = memo(function Block({
   family,
   open,
   impactLine,
+  betTags,
   actions,
 }: BlockProps) {
   const item = b.item;
@@ -1262,41 +1288,62 @@ const Block = memo(function Block({
   // Under its open umbrella, or in its umbrella's lane, a part needs no umbrella line: it's right there.
   const showsUmbrella = !!umbrella && !b.nested && groupBy !== 'umbrella';
   const named = umbrella && showsUmbrella ? partLabel(umbrella, item) : null;
-  // On the team board every bar looks alike and the umbrella's colour is on its tag instead: its name on white
-  // with a dot, or just the dot when the part's own name already says which umbrella it's from.
-  const tagged = colorBy === 'board' && showsUmbrella;
+  // A part shown on its own (the team board, alignment with parts shown) carries its umbrella as a tag: the name
+  // on white after a dot of the umbrella's colour, or just the dot when the part's own name already says it.
+  const tagged = showsUmbrella;
   const cssVars = { '--c': color, '--ink': ink, ...(tagged ? { '--u': boardColorOf(state, item).ink } : {}) } as CSSProperties;
+  // Its strategic bet, in the bet's colour (an open umbrella's parts share its bet, so they go without): a tag on
+  // the second line, before the expected impact, so the name keeps the first; just a dot before the name when the
+  // bar is too short for the tag.
+  const bet = betTags && !b.nested && item.trackId ? state.tracks[item.trackId] : undefined;
+  const betTag = bet && b.w >= 150 && (
+    <span className="bar-tag is-bet" style={{ '--u': bet.color } as CSSProperties}>
+      {bet.name}
+    </span>
+  );
+  const betDot = bet && !betTag && <span className="bar-dot" style={{ '--u': bet.color } as CSSProperties} title={bet.name} />;
   // An umbrella's dates come from its parts: it moves as a whole, and its parts are resized in the team view.
   const partCount = partsOf(state, item.id).length;
   const isUmbrella = partCount > 0;
   const label = (
     <>
-      {named?.prefix || impactLine ? (
-        // Two lines: the umbrella small and quiet on top of a part's own name, or the expected impact under the name.
+      {named?.prefix || impactLine || betTag ? (
+        // Two lines: a part's umbrella tag over its name, or the name over its strategic bet and expected impact.
         <span className="bar-stack">
-          {named?.prefix && <span className={tagged ? 'bar-tag' : 'bar-parent'}>{named.prefix}</span>}
-          <span className="bar-title">{item.title}</span>
-          {impactLine && (
-            <span className="bar-impact">
-              {impactLine.map(({ stage, figures }, k) => (
-                <Fragment key={stage.id}>
-                  {k > 0 && ' · '}
-                  {figures.length > 0 && (
-                    <>
-                      <strong>
-                        <Figures figures={figures} sep=", " />
-                      </strong>{' '}
-                    </>
-                  )}
-                  {stage.name}
-                </Fragment>
-              ))}
+          {named?.prefix && <span className="bar-tag">{named.prefix}</span>}
+          {betDot ? (
+            <span className="bar-line">
+              {betDot}
+              <span className="bar-title">{item.title}</span>
             </span>
+          ) : (
+            <span className="bar-title">{item.title}</span>
           )}
+          <span className="bar-meta">
+            {betTag}
+            {impactLine && (
+              <span className="bar-impact">
+                {impactLine.map(({ stage, figures }, k) => (
+                  <Fragment key={stage.id}>
+                    {k > 0 && ' · '}
+                    {figures.length > 0 && (
+                      <>
+                        <strong>
+                          <Figures figures={figures} sep=", " />
+                        </strong>{' '}
+                      </>
+                    )}
+                    {stage.name}
+                  </Fragment>
+                ))}
+              </span>
+            )}
+          </span>
         </span>
       ) : (
         <>
           {tagged && <span className="bar-dot" />}
+          {betDot}
           <span className="bar-title">{item.title}</span>
         </>
       )}
@@ -1332,7 +1379,8 @@ const Block = memo(function Block({
         className={`tl-item st-${item.status}${actionsW ? ' has-actions' : ''}${item.tall ? ' is-tall' : ''}${open ? ' is-open' : ''}`}
         style={{ left: b.x, top, width: b.w, height, ...cssVars, ...(actionsW ? { '--actions-w': `${actionsW + 12}px` } : {}) } as CSSProperties}
         onPointerDown={(e) => actions.begin(e, { kind: 'move', item, target: 'all', groupId: b.groupId, wholeItem: true, rowTop: b.rowTop, nested: b.nested })}
-        onClick={() => actions.click(item.id)}
+        // An umbrella that opens in place does so on a click; ⌘/Ctrl-click (or Enter) opens its details.
+        onClick={(e) => actions.click(item.id, expandable && isUmbrella && !(e.metaKey || e.ctrlKey))}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

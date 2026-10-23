@@ -52,6 +52,9 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   `confidence` values are kept in the data but not edited.
 - Link button on bars opens the one-pager (or a menu of links) without opening the details. Like the umbrella
   chevron, it's just the icon (and the count), in the bar's text colour: no background or outline.
+- Tags are a field of chips you can also type in, with a list under it of every tag in use and how many
+  initiatives carry it: tick as many as you like (the list stays open), typing narrows it, and what's typed can
+  become a new tag. A comma adds what's typed; Backspace in the empty field takes off the last tag.
 
 ## Umbrellas and parts
 
@@ -70,9 +73,10 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   the dot shows, before the name.
 - Leadership and Alignment bars are 1.4 times their first height (42 px, rows 52 px): a name can take two lines,
   or one line over the expected impact. The bet view keeps its thin Gantt bars.
-- Leadership and Alignment show the umbrella as one bar. A bare chevron (no count, no background) at the end of
-  its bar opens that one umbrella; it stays on its line, its parts appear in new lines under it in a light box,
-  and the lines below move down. Display → Expand all / Collapse all opens or closes all of them.
+- Leadership and Alignment show the umbrella as one bar. Clicking the bar (or the bare chevron at its end) opens
+  that one umbrella in place rather than its details; it stays on its line, its parts appear in new lines under it
+  in a light box, and the lines below move down. ⌘/Ctrl-click (or Enter) opens the umbrella's details; the hover
+  card says so. Display → Expand all / Collapse all opens or closes all of them.
 
 ## Views
 
@@ -86,6 +90,15 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
 - Viewing an older version (time travel) or comparing with one, expected impact reads "then → now" (older figure
   quieter, today's bold) in the header and on the bars, only where it changed. In time travel too, the right-hand
   side is today's roadmap. The compare banner counts initiatives whose outcomes changed.
+- Display → Show strategic bet tags (off by default): each bar names its bet in a small white tag of the bet's
+  colour, on the second line before the expected impact, so the name keeps the first line. Bars too short for
+  the tag get just a dot of the bet's colour before the name. Parts under an open umbrella go without (they
+  share its bet).
+
+### Alignment
+- Lanes by team. Display → Umbrellas: *Grouped* (default) shows one bar per umbrella, opened in place like in
+  Leadership; *Parts, tagged* shows every part on its own, tagged with its umbrella as in the team view (bars
+  keep their team colour, the tag is white).
 
 ### Team view
 - A free board: no names column (names are in the bars), rows chosen by the team, several items to a row when

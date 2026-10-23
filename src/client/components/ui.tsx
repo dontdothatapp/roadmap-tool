@@ -143,6 +143,7 @@ export function Popover({
     // filtered as you type), so a panel shown above its trigger stays against it.
     const resized = new ResizeObserver(place);
     if (ref.current) resized.observe(ref.current);
+    resized.observe(anchor);
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
     return () => {
