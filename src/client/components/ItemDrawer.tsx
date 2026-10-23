@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowRight, ArrowUpRight, Check, Copy, CopyPlus, FileText, Link2, Plus, Trash2, TrendingUp, X } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, CalendarDays, Check, Copy, CopyPlus, FileText, Link2, Plus, Trash2, TrendingUp, X } from 'lucide-react';
 import { BOARD_COLORS, boardColor, boardColorOf } from '../../shared/colors.ts';
 import { fmtRange, relativeTime, toDay, todayDay, fromDay } from '../../shared/dates.ts';
 import { describeChange, epdLine } from '../../shared/describe.ts';
@@ -260,16 +260,20 @@ export function ItemDrawer({ id }: { id: ID }) {
             </button>
           </div>
         )}
-        <CommitText
-          id="dr-title"
-          className="dr-title"
-          value={item.title}
-          wrap
-          autoFocus={focusTitle}
-          disabled={readOnly}
-          onCommit={(title) => patch({ title }, `Renamed “${item.title}”`)}
-          ariaLabel="Title"
-        />
+        <div className="dr-title-row">
+          {/* An umbrella or part: the umbrella's colour (its parts' tags on the board), picked from the swatch. */}
+          {(isUmbrella || umbrella) && <ColorField item={item} state={state} readOnly={readOnly} />}
+          <CommitText
+            id="dr-title"
+            className="dr-title"
+            value={item.title}
+            wrap
+            autoFocus={focusTitle}
+            disabled={readOnly}
+            onCommit={(title) => patch({ title }, `Renamed “${item.title}”`)}
+            ariaLabel="Title"
+          />
+        </div>
 
         {/* Fields without labels: an empty one names itself ("Strategic bet", "Part of an umbrella"). */}
         <div className="dr-fields">
@@ -289,15 +293,14 @@ export function ItemDrawer({ id }: { id: ID }) {
             ))}
           </select>
           {!isUmbrella && <PartOfField item={item} state={state} readOnly={readOnly} />}
-          {(isUmbrella || umbrella) && <ColorField item={item} state={state} readOnly={readOnly} />}
         </div>
 
         {isUmbrella ? (
-          <Section title="Parts" aside={<ScheduleSummary item={shown} cal={cal} />}>
+          <Section title="Parts">
             <PartsEditor item={item} state={state} cal={cal} readOnly={readOnly} />
           </Section>
         ) : (
-          <Section title="Schedule" aside={<ScheduleSummary item={item} cal={cal} />}>
+          <Section title="Schedule">
             <ScheduleEditor item={item} cal={cal} readOnly={readOnly} />
             {!umbrella && !readOnly && Object.keys(item.phases).length > 0 && (
               <button type="button" className="link-btn sm split-btn" onClick={() => splitIntoParts(item)} title="Plan it as iterations, releases or parallel streams under this name">
@@ -366,17 +369,6 @@ export function ItemDrawer({ id }: { id: ID }) {
   );
 }
 
-function ScheduleSummary({ item, cal }: { item: Item; cal: SprintCalendar }) {
-  const span = overallSpan(item);
-  if (!span) return <span className="muted sm">Not scheduled</span>;
-  const weeks = Math.round((toDay(span.end) - toDay(span.start)) / 7);
-  return (
-    <span className="muted sm">
-      <span className="mono">{cal.spanCode(span)}</span> · {weeks} week{weeks === 1 ? '' : 's'}
-    </span>
-  );
-}
-
 function sprintOptions(cal: SprintCalendar, include: number[]) {
   const now = cal.indexOf(todayDay());
   let from = now - 15;
@@ -402,158 +394,139 @@ function defaultPhaseSpan(item: Item, phase: PhaseKey, cal: SprintCalendar): Spa
   return cal.spanFromIndexes(start, start + 1);
 }
 
-/** Two lines: the phases (pick one, or add a missing one), then the sprints of the picked phase. */
+/**
+ * The phases as three blocks, each with its sprints. A click on one opens its sprints to pick from (an empty one is
+ * added that way), with the option to take the phase off again.
+ */
 function ScheduleEditor({ item, cal, readOnly }: { item: Item; cal: SprintCalendar; readOnly: boolean }) {
-  const present = PHASES.filter((p) => item.phases[p]);
-  const fallback: PhaseKey = present.includes('implementation') ? 'implementation' : (present[0] ?? 'implementation');
-  const [picked, setPicked] = useState<PhaseKey | null>(null);
-  const selected = picked && item.phases[picked] ? picked : fallback;
-  const span = item.phases[selected];
+  const [open, setOpen] = useState<PhaseKey | null>(null);
+  const blocks = useRef<Partial<Record<PhaseKey, HTMLButtonElement | null>>>({});
   return (
     <div className="schedule">
-      <div className="ph-chips" role="tablist" aria-label="Phases">
+      <div className="ph-chips">
         {PHASES.map((p) => {
           const s = item.phases[p];
           return (
             <button
               key={p}
-              type="button"
-              role="tab"
-              aria-selected={!!s && p === selected}
-              className={`ph-chip${s ? ' is-set' : ''}${s && p === selected ? ' is-selected' : ''}`}
-              disabled={!s && readOnly}
-              title={s ? `${PHASE_LABELS[p]}: ${cal.describeSpan(s)}` : `Add ${PHASE_LABELS[p]} (one sprint)`}
-              onClick={() => {
-                if (!s) setPhase(item.id, p, defaultPhaseSpan(item, p, cal));
-                setPicked(p);
+              ref={(el) => {
+                blocks.current[p] = el;
               }}
+              type="button"
+              className={`ph-chip${s ? ' is-set' : ''}${open === p ? ' is-selected' : ''}`}
+              disabled={readOnly}
+              aria-expanded={open === p}
+              aria-label={s ? `${PHASE_LABELS[p]}: ${cal.describeSpan(s)}. Change sprints` : `Add ${PHASE_LABELS[p]}`}
+              title={s ? `${PHASE_LABELS[p]}: ${cal.describeSpan(s)}` : `Add ${PHASE_LABELS[p]}`}
+              onClick={() => setOpen(open === p ? null : p)}
             >
               <span className="ph-chip-top">
                 {s ? <span className={`phase-swatch ${p}`} /> : <Plus size={12} />}
                 <span className="ph-chip-name">{PHASE_LABELS[p]}</span>
               </span>
-              <span className={`ph-chip-code${s ? ' mono' : ''}`}>{s ? cal.spanCode(s) : 'Add one sprint'}</span>
+              <span className={`ph-chip-code${s ? ' mono' : ''}`}>{s ? cal.spanCode(s) : 'Add sprints'}</span>
             </button>
           );
         })}
       </div>
-      {span ? (
-        <div className="ph-range">
-          <SprintRangePicker
-            span={span}
-            cal={cal}
-            label={PHASE_LABELS[selected]}
-            disabled={readOnly}
-            onChange={(next) => setPhase(item.id, selected, next)}
-          />
-          {!readOnly && (
-            <button
-              type="button"
-              className="icon-btn xs"
-              onClick={() => setPhase(item.id, selected, null)}
-              aria-label={`Remove ${PHASE_LABELS[selected]}`}
-              title={`Remove ${PHASE_LABELS[selected]}`}
-            >
-              <Trash2 size={13} />
-            </button>
-          )}
-        </div>
-      ) : (
-        <p className="muted sm ph-empty">Not on the roadmap yet (it’s in the team’s backlog). Pick a phase above to schedule it.</p>
+      {PHASES.every((p) => !item.phases[p]) && <p className="muted sm ph-empty">In the team’s backlog: pick a phase to put it on the roadmap.</p>}
+      {open && (
+        <SprintRangePicker
+          key={open}
+          anchor={blocks.current[open] ?? null}
+          label={PHASE_LABELS[open]}
+          span={item.phases[open] ?? null}
+          suggest={defaultPhaseSpan(item, open, cal)}
+          cal={cal}
+          onChange={(next) => setPhase(item.id, open, next)}
+          onRemove={() => {
+            setPhase(item.id, open, null);
+            setOpen(null);
+          }}
+          onClose={() => setOpen(null)}
+        />
       )}
     </div>
   );
 }
 
-/** One control for both ends of a phase: click the first sprint, then the last (or stop after one for a single sprint). */
+/**
+ * A phase's sprints, under its block: click the first, then the last (or close for just one). An empty phase
+ * starts at the sprint it would naturally take; one that's set can be removed from here.
+ */
 function SprintRangePicker({
-  span,
-  cal,
+  anchor,
   label,
-  disabled,
+  span,
+  suggest,
+  cal,
   onChange,
+  onRemove,
+  onClose,
 }: {
-  span: Span;
-  cal: SprintCalendar;
+  anchor: HTMLElement | null;
   label: string;
-  disabled: boolean;
+  span: Span | null;
+  suggest: Span;
+  cal: SprintCalendar;
   onChange: (span: Span) => void;
+  onRemove: () => void;
+  onClose: () => void;
 }) {
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [open, setOpen] = useState(false);
   const [first, setFirst] = useState<number | null>(null);
   const [hover, setHover] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const [a, b] = cal.spanIndexes(span);
+  const [a, b] = cal.spanIndexes(span ?? suggest);
   const now = cal.indexOf(todayDay());
   const options = sprintOptions(cal, [a, b - 1]);
-  const close = () => {
-    setOpen(false);
-    setFirst(null);
-    setHover(null);
-  };
   useEffect(() => {
-    if (open) listRef.current?.querySelector('.is-start')?.scrollIntoView({ block: 'center' });
-  }, [open]);
+    listRef.current?.querySelector('.is-start, .is-suggested')?.scrollIntoView({ block: 'center' });
+  }, []);
   // While choosing the last sprint, show the range it would make.
-  const [lo, hi] = first !== null ? [Math.min(first, hover ?? first), Math.max(first, hover ?? first) + 1] : [a, b];
-  const count = b - a;
+  const [lo, hi] = first !== null ? [Math.min(first, hover ?? first), Math.max(first, hover ?? first) + 1] : span ? [a, b] : [NaN, NaN];
   return (
-    <>
-      <button
-        type="button"
-        ref={setAnchorEl}
-        className={`range-btn${open ? ' is-open' : ''}`}
-        disabled={disabled}
-        aria-label={`${label}: ${cal.describeSpan(span)}. Change sprints`}
-        onClick={() => (open ? close() : setOpen(true))}
-      >
-        <span className="mono range-codes">
-          {cal.get(a).code}
-          {count > 1 && (
-            <>
-              <ArrowRight size={12} /> {cal.get(b - 1).code}
-            </>
-          )}
-        </span>
-        <span className="range-dates">{fmtRange(cal.get(a).start, cal.get(b - 1).end)}</span>
-        <span className="range-count">
-          {count} sprint{count === 1 ? '' : 's'}
-        </span>
-      </button>
-      <Popover anchor={anchorEl} open={open} onClose={close} width={280}>
-        <div className="range-pop">
-          <div className="range-hint">{first === null ? `${label}: pick the first sprint` : 'Now the last sprint (or close for just one)'}</div>
-          <div className="range-list" ref={listRef} onPointerLeave={() => setHover(null)}>
-            {options.map((s) => {
-              const inRange = s.index >= lo && s.index < hi;
-              return (
-                <button
-                  key={s.index}
-                  type="button"
-                  className={`range-opt${inRange ? ' is-in' : ''}${s.index === lo ? ' is-start' : ''}${s.index === hi - 1 ? ' is-end' : ''}${s.highlight ? ' is-hl' : ''}`}
-                  onPointerEnter={() => setHover(s.index)}
-                  onClick={() => {
-                    if (first === null) {
-                      // One sprint right away; a second click stretches it.
-                      setFirst(s.index);
-                      onChange(cal.spanFromIndexes(s.index, s.index + 1));
-                    } else {
-                      onChange(cal.spanFromIndexes(Math.min(first, s.index), Math.max(first, s.index) + 1));
-                      close();
-                    }
-                  }}
-                >
-                  <span className="mono range-opt-code">{s.code}</span>
-                  <span className="range-opt-dates">{fmtRange(s.start, s.end)}</span>
-                  {s.index === now && <span className="range-now">now</span>}
-                </button>
-              );
-            })}
-          </div>
+    <Popover anchor={anchor} open onClose={onClose} width={280}>
+      <div className="range-pop">
+        <div className="range-hint">{first === null ? `${label}: pick the first sprint` : 'Now the last sprint (or close for just one)'}</div>
+        <div className="range-list" ref={listRef} onPointerLeave={() => setHover(null)}>
+          {options.map((s) => {
+            const inRange = s.index >= lo && s.index < hi;
+            return (
+              <button
+                key={s.index}
+                type="button"
+                className={`range-opt${inRange ? ' is-in' : ''}${s.index === lo ? ' is-start' : ''}${s.index === hi - 1 ? ' is-end' : ''}${!span && s.index === a ? ' is-suggested' : ''}${s.highlight ? ' is-hl' : ''}`}
+                onPointerEnter={() => setHover(s.index)}
+                onClick={() => {
+                  if (first === null) {
+                    // One sprint right away; a second click stretches it.
+                    setFirst(s.index);
+                    onChange(cal.spanFromIndexes(s.index, s.index + 1));
+                  } else {
+                    onChange(cal.spanFromIndexes(Math.min(first, s.index), Math.max(first, s.index) + 1));
+                    onClose();
+                  }
+                }}
+              >
+                <span className="mono range-opt-code">{s.code}</span>
+                <span className="range-opt-dates">{fmtRange(s.start, s.end)}</span>
+                {s.index === now && <span className="range-now">now</span>}
+              </button>
+            );
+          })}
         </div>
-      </Popover>
-    </>
+        {span && (
+          <div className="range-foot">
+            <span className="muted sm">
+              {b - a} sprint{b - a === 1 ? '' : 's'} · {fmtRange(cal.get(a).start, cal.get(b - 1).end)}
+            </span>
+            <button type="button" className="link-btn sm danger-text" onClick={onRemove}>
+              <Trash2 size={12} /> Remove
+            </button>
+          </div>
+        )}
+      </div>
+    </Popover>
   );
 }
 
@@ -757,7 +730,8 @@ function InitiativePicker({
 /** Which initiative this is a part of: an existing one, or a new umbrella named after it (its outcomes move up). */
 /**
  * An umbrella's colour: the tag naming it on each of its parts on the team board (the bars themselves all look
- * alike). Shown for umbrellas and parts only; a part's is its umbrella's, so picking one there recolours them all.
+ * alike). Just a swatch before the title, for umbrellas and parts only; a part's is its umbrella's, so picking
+ * one there recolours them all.
  */
 function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState; readOnly: boolean }) {
   const [open, setOpen] = useState(false);
@@ -771,8 +745,6 @@ function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState
     const name = boardColor(id).name.toLowerCase();
     updateItem(target.id, { color: id }, `Coloured “${target.title}” and its parts ${name}`);
   };
-  // No label next to it: the note says what the colour is for.
-  const note = umbrella ? 'its umbrella’s colour' : 'its parts’ tag colour';
   return (
     <>
       <button
@@ -783,12 +755,11 @@ function ColorField({ item, state, readOnly }: { item: Item; state: RoadmapState
         disabled={readOnly}
         aria-haspopup="true"
         aria-expanded={open}
-        title="The colour of the umbrella’s tag on its parts, on the team board"
+        aria-label={`Colour: ${current.name}`}
+        title={`${current.name}: the colour of ${umbrella ? 'its umbrella' : 'this umbrella'}’s tag on its parts`}
         onClick={() => setOpen((o) => !o)}
       >
         <span className="color-swatch" style={{ background: current.ink }} />
-        <span>{current.name}</span>
-        {note && <span className="muted">· {note}</span>}
       </button>
       <Popover anchor={anchor.current} open={open} onClose={() => setOpen(false)} width={236}>
         <div className="color-grid" role="listbox" aria-label="Colour on the team board">
@@ -1095,67 +1066,81 @@ function OutcomesEditor({ item, state, readOnly }: { item: Item; state: RoadmapS
         const built = landingMonth(dated, { ...o, landsBy: null });
         const landing = landingMonth(dated, o);
         return (
-          <div key={o.id} className="outcome-card" style={{ '--c': stage?.color ?? '#888' } as React.CSSProperties}>
-            <div className="outcome-row">
-              <select id={`dr-oc-stage-${o.id}`} className="select sm oc-stage" value={o.stageId} disabled={readOnly} onChange={(e) => edit(i, { stageId: e.target.value })} aria-label="Funnel stage">
-                {!stage && <option value={o.stageId}>Choose a stage</option>}
+          // Like a driver card in the Impact view: the change first and large, then what it moves and when.
+          <div key={o.id} className="outcome-card">
+            <div className="outcome-head" style={{ '--digits': Math.max(1, o.impact === null ? 2 : String(o.impact).length) } as React.CSSProperties}>
+              {/* A rise reads "+3", as on the Impact view's cards; a fall shows its own minus. */}
+              {(o.impact === null || o.impact >= 0) && <span className="outcome-sign">+</span>}
+              <CommitText
+                id={`dr-oc-impact-${o.id}`}
+                className="input outcome-impact"
+                type="number"
+                value={o.impact === null ? '' : String(o.impact)}
+                placeholder="2"
+                disabled={readOnly}
+                ariaLabel="Expected change"
+                onCommit={(v) => edit(i, { impact: v.trim() === '' || Number.isNaN(Number(v)) ? null : Number(v) })}
+              />
+              <select id={`dr-oc-unit-${o.id}`} className="select ghost sm outcome-unit" value={o.unit} disabled={readOnly} onChange={(e) => edit(i, { unit: e.target.value as Outcome['unit'] })} aria-label="Unit">
+                {IMPACT_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u === 'abs' ? 'absolute' : u === '%' ? '% relative' : 'pp (points)'}
+                  </option>
+                ))}
+              </select>
+              {!readOnly && (
+                <button type="button" className="icon-btn xs outcome-remove" onClick={() => set(item.outcomes.filter((_, j) => j !== i))} aria-label="Remove outcome" title="Remove outcome">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            <div className="outcome-line">
+              <span className="outcome-icon">
+                <span className="outcome-stage-dot" style={{ background: stage?.color ?? '#888' }} />
+              </span>
+              <select id={`dr-oc-stage-${o.id}`} className="select ghost sm" value={o.stageId} disabled={readOnly} onChange={(e) => edit(i, { stageId: e.target.value })} aria-label="Funnel stage">
+                {!stage && <option value={o.stageId}>Choose a funnel stage</option>}
                 {stages.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
-              <CommitText
-                id={`dr-oc-impact-${o.id}`}
-                className="input sm num"
-                type="number"
-                value={o.impact === null ? '' : String(o.impact)}
-                placeholder="+2"
-                disabled={readOnly}
-                ariaLabel="Expected change"
-                onCommit={(v) => edit(i, { impact: v.trim() === '' || Number.isNaN(Number(v)) ? null : Number(v) })}
-              />
-              <select id={`dr-oc-unit-${o.id}`} className="select sm" value={o.unit} disabled={readOnly} onChange={(e) => edit(i, { unit: e.target.value as Outcome['unit'] })} aria-label="Unit">
-                {IMPACT_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u === 'abs' ? 'absolute' : u === '%' ? '% relative' : 'pp'}
-                  </option>
-                ))}
-              </select>
-              {!readOnly && (
-                <button type="button" className="icon-btn xs" onClick={() => set(item.outcomes.filter((_, j) => j !== i))} aria-label="Remove outcome">
-                  <X size={13} />
-                </button>
-              )}
             </div>
-            <div className="outcome-row">
+            <div className="outcome-line">
+              <span className="outcome-icon">
+                <CalendarDays size={14} />
+              </span>
               <select
                 id={`dr-oc-lands-${o.id}`}
-                className="select sm"
+                className="select ghost sm"
                 value={o.landsBy ? String(monthNo(toDay(o.landsBy))) : ''}
                 disabled={readOnly}
-                aria-label="Lands in"
+                aria-label="When the impact starts"
                 onChange={(e) => edit(i, { landsBy: e.target.value ? fromDay(monthStart(Number(e.target.value))) : null })}
               >
-                <option value="">Lands {built ? `${monthLabel(built.month)} (end of implementation)` : 'when built'}</option>
+                <option value="">Starts {built ? `${monthLabel(built.month)} (end of implementation)` : 'when built'}</option>
                 {months.map((m) => (
                   <option key={m} value={m}>
-                    Lands {monthLabel(m, true)}
+                    Starts {monthLabel(m, true)}
                   </option>
                 ))}
               </select>
-              {o.ramp.length === 0 && !readOnly && (
-                <button type="button" className="link-btn sm" onClick={() => edit(i, { ramp: [50] })} title="Impact that builds up over a few months">
-                  <TrendingUp size={13} /> Ramp up
+            </div>
+            <div className="outcome-line">
+              <span className="outcome-icon">
+                <TrendingUp size={14} />
+              </span>
+              {o.ramp.length > 0 ? (
+                <RampEditor outcome={o} landing={landing?.month ?? null} readOnly={readOnly} onChange={(ramp) => edit(i, { ramp })} />
+              ) : readOnly ? (
+                <span className="muted sm">Full impact from the start</span>
+              ) : (
+                <button type="button" className="outcome-add" onClick={() => edit(i, { ramp: [50] })} title="Impact that builds up over a few months">
+                  Full impact from the start · <span className="link-btn sm">Add a ramp-up</span>
                 </button>
               )}
             </div>
-            {o.ramp.length > 0 && <RampEditor outcome={o} landing={landing?.month ?? null} readOnly={readOnly} onChange={(ramp) => edit(i, { ramp })} />}
-            {o.impact !== null && (
-              <div className="outcome-summary">
-                <strong>{formatImpact(o.impact, o.unit)}</strong> {stage?.name ?? 'funnel'} · {landingText(dated, o)}
-              </div>
-            )}
           </div>
         );
       })}
@@ -1219,8 +1204,7 @@ function RampEditor({ outcome, landing, readOnly, onChange }: { outcome: Outcome
   const label = (k: number) => (landing === null ? `Month ${k + 1}` : monthLabel(landing + k));
   const last = ramp[ramp.length - 1] ?? 0;
   return (
-    <div className="ramp">
-      <span className="ramp-label">Ramp-up</span>
+    <div className="ramp" aria-label="Ramp-up">
       {ramp.map((pct, k) => (
         <label key={k} className="ramp-step">
           <span>{label(k)}</span>

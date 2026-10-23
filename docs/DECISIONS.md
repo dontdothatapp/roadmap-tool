@@ -46,16 +46,22 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   text, red when it's on. No "done" (finished work is simply in the past; old done items read as on track), no
   "on track" label anywhere, no starring.
 - The details are compact: the strategic bet and the umbrella are two fields side by side without labels (an
-  empty one reads "Strategic bet" / "Part of an umbrella"); an umbrella or part shows its colour next to them.
+  empty one reads "Strategic bet" / "Part of an umbrella"). An umbrella or part has its umbrella's colour as a
+  swatch in front of the title, nothing more (no colour name or explanation).
   No explanations under sections: the one-pager's sharing is in its placeholder ("One-pager, shared by all parts
   of …"), "Add a link" has no examples, Expected outcomes has no intro. Activity shows the last two changes, the
   rest behind "Show N earlier changes".
-- Schedule takes two lines: phase chips (Discovery, UX, Implementation), then one sprint-range picker for the
-  chosen phase.
+- Schedule is three blocks (Discovery, UX, Implementation) with their sprints; clicking one opens its sprints to
+  pick the first and last from (an empty phase starts at the sprint it would naturally take), with Remove at the
+  bottom. No separate range line, and no overall "W40–BB44 · 5 weeks" summary (nor on an umbrella's Parts).
 - Expected outcomes: funnel stage (the stage *is* the metric, so no separate metric field), impact in % / pp /
   absolute, the month it lands (monthly, not quarterly; default: the month implementation ends), and an optional
   ramp-up (e.g. 50% in July, 85% in August, full from September). No confidence field. Old `metric` and
   `confidence` values are kept in the data but not edited.
+- Each outcome is a card like the Impact view's driver cards: the change large ("+3") with its unit (% relative,
+  pp, absolute) beside it, then one line each for the funnel stage (its colour dot), when it starts ("Starts Dec
+  (end of implementation)") and the ramp-up ("Full impact from the start · Add a ramp-up", or the months).
+  Fields read as text until hovered.
 - Link button on bars opens the one-pager (or a menu of links) without opening the details. Like the umbrella
   chevron, it's just the icon (and the count), in the bar's text colour: no background or outline.
 - No tags (taken out in October 2026: not needed for now). Old tags stay in the data, unseen.

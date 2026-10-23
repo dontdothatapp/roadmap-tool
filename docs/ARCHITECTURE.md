@@ -136,10 +136,11 @@ being viewed or compared against), undo/redo stacks, toasts, overlays.
 Shell (`App.tsx`): sidebar (an icon rail that opens on hover, or pinned), item drawer, search (`CommandPalette`),
 shortcuts help, global keys (N, 1–5, T, +/−, arrows), presence, toasts.
 
-`components/ItemDrawer.tsx` is the initiative details panel: the at-risk flag in its header, title, strategic bet
-and umbrella ("Part of") side by side, umbrella colour (umbrellas and parts only), schedule (phase chips + sprint
-range picker) or parts, description, one-pager and links, expected outcomes (with ramp-up), connections (both
-directions, `ConnectionsEditor`), activity (last two, then the rest on request).
+`components/ItemDrawer.tsx` is the initiative details panel: the at-risk flag in its header, title (with the
+umbrella colour swatch, `ColorField`, for umbrellas and parts), strategic bet and umbrella ("Part of") side by
+side, schedule (three phase blocks, each opening `SprintRangePicker`) or parts, description, one-pager and links,
+expected outcomes (cards: change, stage, start month, ramp-up), connections (both directions, `ConnectionsEditor`),
+activity (last two, then the rest on request).
 
 `components/ui.tsx` has the shared bits, among them `Popover`, which
 keeps a stack of open popovers so one can open inside another (a click in the inner one doesn't close the

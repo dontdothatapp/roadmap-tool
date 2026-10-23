@@ -3208,6 +3208,11 @@ body.drag-create * {
   margin: 12px 0 6px;
 }
 
+/* An umbrella has no "Part of": its strategic bet takes the whole row. */
+.dr-fields > :only-child {
+  grid-column: 1 / -1;
+}
+
 .dr-fields .select {
   width: 100%;
 }
@@ -3227,32 +3232,42 @@ body.drag-create * {
   color: var(--danger);
 }
 
+/* The title, with an umbrella's colour swatch in front of it (lined up with its first line). */
+.dr-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dr-title-row .dr-title {
+  flex: 1;
+  min-width: 0;
+}
+
+/* After the swatch, the title's text doesn't reach back to the edge. */
+.dr-title-row .color-field + .dr-title {
+  margin-left: 0;
+}
+
 .color-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-self: start;
-  max-width: 100%;
-  height: 30px;
-  padding: 0 10px 0 7px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 3px;
   border-radius: 7px;
-  border: 1px solid transparent;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
+}
+
+.color-field .color-swatch {
+  width: 18px;
+  height: 18px;
 }
 
 .color-field:hover:not(:disabled),
 .color-field[aria-expanded='true'] {
-  border-color: var(--line);
   background: var(--surface-2);
-}
-
-.color-field .muted {
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .color-swatch {
@@ -3297,7 +3312,7 @@ body.drag-create * {
   color: var(--text-3);
 }
 
-/* Schedule: phases on one line, the picked phase's sprints on the next. */
+/* Schedule: the three phases as blocks; a click on one opens its sprints. */
 .schedule {
   display: flex;
   flex-direction: column;
@@ -3367,64 +3382,27 @@ body.drag-create * {
   text-overflow: ellipsis;
 }
 
-.ph-range {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .ph-empty {
   margin: 0;
-}
-
-.range-btn {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  text-align: left;
-  font-size: 13px;
-}
-
-.range-btn:hover:not(:disabled),
-.range-btn.is-open {
-  border-color: var(--accent-line);
-}
-
-.range-codes {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-}
-
-.range-codes svg {
-  color: var(--text-3);
-}
-
-.range-dates {
-  color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.range-count {
-  margin-left: auto;
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
 }
 
 .range-pop {
   display: flex;
   flex-direction: column;
+}
+
+/* A phase not set yet: where it would naturally go. */
+.range-opt.is-suggested {
+  box-shadow: inset 2px 0 0 var(--accent-line);
+}
+
+.range-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
 }
 
 .range-hint {
@@ -3555,29 +3533,99 @@ body.drag-create * {
   text-align: left;
 }
 
-.outcome-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
+/* An expected outcome, like a driver card in the Impact view: the change large, then a line each for what it
+   moves, when it starts and how it ramps up. Fields read as text until hovered or edited. */
 .outcome-card {
-  border-left: 3px solid var(--c);
+  gap: 2px;
+  padding: 8px 10px 8px 12px;
+  background: var(--surface);
 }
 
-.outcome-row .oc-stage {
-  flex: 1;
-  min-width: 130px;
+.outcome-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 2px;
 }
 
-.outcome-row .input.num {
-  width: 72px;
+/* Sized to its digits (set from the stored value), so the unit sits right after the number. */
+.outcome-head .outcome-impact {
+  width: calc(var(--digits) * 1ch + 16px);
+  min-width: 34px;
+  height: 36px;
+  padding: 0 6px;
+  -moz-appearance: textfield;
+  border-color: transparent;
+  background: transparent;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.outcome-summary {
-  font-size: 12px;
+.outcome-head .outcome-impact::-webkit-inner-spin-button,
+.outcome-head .outcome-impact::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.outcome-head .outcome-impact:hover:not(:disabled) {
+  border-color: var(--line);
+}
+
+.outcome-sign {
+  margin-right: -7px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.outcome-head .outcome-unit {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-2);
+}
+
+.outcome-remove {
+  margin-left: auto;
+}
+
+.outcome-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-height: 28px;
+  font-size: 12.5px;
+}
+
+.outcome-line .select {
+  margin-left: -8px;
+  min-width: 0;
+}
+
+.outcome-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  margin-right: 6px;
+  color: var(--text-3);
+}
+
+.outcome-stage-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+/* No ramp-up yet: quiet text with the way to add one. */
+.outcome-add {
+  font-size: 12.5px;
+  color: var(--text-3);
+  text-align: left;
+}
+
+.outcome-add:hover .link-btn {
+  text-decoration: underline;
 }
 
 /* Ramp-up: the share of the impact month by month after it lands. */
@@ -3589,10 +3637,6 @@ body.drag-create * {
   font-size: 12px;
 }
 
-.ramp-label {
-  font-weight: 650;
-  color: var(--text-2);
-}
 
 .ramp-step {
   display: inline-flex;
