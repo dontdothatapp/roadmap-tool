@@ -57,7 +57,7 @@ Roadmaps from earlier versions open as they are: initiatives that were *idea* or
 
 ## Working with it
 
-- The **sidebar** holds the views, your teams, search, undo/redo and settings (new initiatives are drawn right on the roadmap, see Quick add below, or added with **N**). It rests as a slim icon rail and opens over the roadmap when you hover it; the pin next to the name keeps it open. Each view's controls sit in one row; grouping, colours and toggles are under **Display**.
+- The **sidebar** holds the views, your teams, search, undo/redo and settings (new initiatives are drawn right on the roadmap, see Quick add below, or added with **N**). It rests as a slim icon rail and opens over the roadmap when you hover it; the pin next to the name keeps it open. Each view's controls sit in one row; grouping, colours and toggles are under **Display**, and **Filters** narrows the roadmap by team, strategic bet, status or tag (the tag filter is a list you tick several from, or type in to narrow).
 - **Drag** a bar to reschedule it; it snaps to whole sprints. Drag an **edge** to change the start or end. **⇧ + drag** a phase to move all phases together.
 - **Drag up or down** to move an initiative to another team or strategic bet. In the team view, drop it on any row (several can share one; if the dates clash it takes the next free row), or between two rows to add a row there.
 - **Drag a bar's bottom edge** down to make it two rows high, with room for a long name; drag it up for one row.

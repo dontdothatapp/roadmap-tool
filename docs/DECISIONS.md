@@ -54,7 +54,8 @@ Newest areas last within each section. (Built in October 2026; "today" in the ex
   chevron, it's just the icon (and the count), in the bar's text colour: no background or outline.
 - Tags are a field of chips you can also type in, with a list under it of every tag in use and how many
   initiatives carry it: tick as many as you like (the list stays open), typing narrows it, and what's typed can
-  become a new tag. A comma adds what's typed; Backspace in the empty field takes off the last tag.
+  become a new tag. A comma adds what's typed; Backspace in the empty field takes off the last tag. The tag
+  filter (Filters panel) is the same field, without making new tags; it reads "Any tag" when empty.
 
 ## Umbrellas and parts
 

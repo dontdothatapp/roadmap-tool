@@ -107,7 +107,14 @@ export function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="kbd">{children}</kbd>;
 }
 
-/** A floating panel anchored to a trigger element. Closes on outside click and Escape. */
+/** Open popovers, oldest first: one can open inside another (the tag list in the filters). */
+const openPopovers: HTMLElement[] = [];
+const escaped = new WeakSet<Event>();
+
+/**
+ * A floating panel anchored to a trigger element. Closes on outside click and Escape. A click in a popover opened
+ * on top of it (from inside it) counts as inside, and Escape closes only the topmost one.
+ */
 export function Popover({
   anchor,
   open,
@@ -153,15 +160,29 @@ export function Popover({
     };
   }, [open, anchor, align, width]);
 
+  // Its place in the stack is when it opened (not when its listeners were last set up).
   useEffect(() => {
-    if (!open) return;
+    const el = ref.current;
+    if (!open || !el) return;
+    openPopovers.push(el);
+    return () => {
+      openPopovers.splice(openPopovers.indexOf(el), 1);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!open || !el) return;
     const onDown = (e: PointerEvent) => {
       const t = e.target as Node;
-      if (ref.current?.contains(t) || anchor?.contains(t)) return;
+      if (el.contains(t) || anchor?.contains(t)) return;
+      if (openPopovers.slice(openPopovers.indexOf(el) + 1).some((above) => above.contains(t))) return;
       onClose();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      // Closing the top one can take it off the stack before the next one hears the key: one Escape, one popover.
+      if (e.key === 'Escape' && openPopovers[openPopovers.length - 1] === el && !escaped.has(e)) {
+        escaped.add(e);
         e.stopPropagation();
         onClose();
       }

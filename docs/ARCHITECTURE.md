@@ -140,6 +140,11 @@ shortcuts help, global keys (N, 1–5, T, +/−, arrows), presence, toasts.
 ("Part of"), umbrella colour (umbrellas and parts only), schedule (phase chips + sprint range picker) or parts, description, one-pager and
 links, expected outcomes (with ramp-up), dependencies, activity.
 
+`components/TagPicker.tsx`: tags as chips in a field with a list to tick several from (the drawer's tags, which
+can make new ones, and the tag filter). `components/ui.tsx` has the shared bits, among them `Popover`, which
+keeps a stack of open popovers so one can open inside another (a click in the inner one doesn't close the
+outer, Escape closes only the top one).
+
 `lib/model.ts`: sorting, filters (`applyFilters`, `matchesQuery`), `groupsFor` (lanes and which lanes an item is
 in), `regroupPatch` / `newItemPatch` (what dragging into a lane, or drawing in it, sets), `colorOf`, `inkOn`,
 `pickableInitiatives` (the umbrella picker's list: own team, umbrellas first), `tagChoices` / `normalizeTag` (the

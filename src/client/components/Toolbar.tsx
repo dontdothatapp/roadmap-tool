@@ -5,6 +5,7 @@ import { allTags, sortedTeams, sortedTracks, STATUS_COLORS } from '../lib/model.
 import { uiBus } from '../lib/bus.ts';
 import { activeFilterCount, clearFilters, setFilters, setPrefs, useApp, useRoadmap, type ColorBy, type GroupBy, type PhaseMode, type TimelineView } from '../store.ts';
 import { MAX_ZOOM, MIN_ZOOM } from '../timeline/Timeline.tsx';
+import { TagPicker } from './TagPicker.tsx';
 import { Popover, Segmented, Toggle } from './ui.tsx';
 
 /**
@@ -304,14 +305,10 @@ export function FilterButton({ hideTeams = false }: { hideTeams?: boolean }) {
           </section>
           {tags.length > 0 && (
             <section>
-              <h4>Tags</h4>
-              <div className="chips">
-                {tags.map((t) => (
-                  <button key={t} type="button" className={`chip tag${filters.tags.includes(t) ? ' is-on' : ''}`} onClick={() => setFilters({ tags: toggle(filters.tags, t) })}>
-                    #{t}
-                  </button>
-                ))}
-              </div>
+              <h4>
+                <label htmlFor="filter-tags">Tags</label>
+              </h4>
+              <TagPicker id="filter-tags" state={state} selected={filters.tags} placeholder="Any tag" onToggle={(t) => setFilters({ tags: toggle(filters.tags, t) })} />
             </section>
           )}
           <div className="filters-foot">
